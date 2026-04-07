@@ -3251,8 +3251,14 @@
   "resetProviderSection.resetButton": {
     "defaultMessage": "Reset Provider and Model"
   },
+  "resetProviderSection.resetButtonDistro": {
+    "defaultMessage": "Reset to {distroName} Defaults"
+  },
   "resetProviderSection.resetDescription": {
     "defaultMessage": "This will clear your selected model and provider settings. If no defaults are available, you'll be taken to the welcome screen to set them up again."
+  },
+  "resetProviderSection.resetDescriptionDistro": {
+    "defaultMessage": "This will reset your model and provider settings to the {distroName} defaults."
   },
   "responseStyle.conciseDescription": {
     "defaultMessage": "Tool calls are by default closed and only show the tool used"

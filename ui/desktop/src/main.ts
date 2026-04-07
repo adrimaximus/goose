@@ -46,7 +46,7 @@ import {
   setupAutoUpdater,
   updateTrayMenu,
 } from './utils/autoUpdater';
-import { getDistroFeature, getDistroFilePath, getDistroDir } from './distro';
+import { getDistroFeature, getDistroFilePath, getDistroDir, getDistroName } from './distro';
 
 const UPDATES_ENABLED = getDistroFeature('updatesEnabled', true);
 import './utils/recipeHash';
@@ -551,6 +551,7 @@ let appConfig = {
     'dictationAllowedProviders',
     null
   ),
+  DISTRO_NAME: getDistroName(),
 };
 
 const windowMap = new Map<number, BrowserWindow>();

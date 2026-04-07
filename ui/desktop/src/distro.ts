@@ -2,6 +2,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 
 interface DistroConfig {
+  name?: string;
   env?: Record<string, string>;
   features?: Record<string, unknown>;
 }
@@ -46,6 +47,10 @@ export function getDistroFeature<T>(key: string, defaultValue: T): T {
     return distroConfig.features[key] as T;
   }
   return defaultValue;
+}
+
+export function getDistroName(): string | null {
+  return distroConfig.name || null;
 }
 
 export function getDistroDir(): string | null {
