@@ -33,7 +33,6 @@ chrono = { version = "0.4", features = ["serde"] }
 serde_yaml = "0.9"
 etcetera = "0.8"
 futures = "0.3"
-tokio-stream = "0.1"
 tokio-util = { version = "0.7", features = ["compat", "rt"] }
 async-trait = "0.1"
 agent-client-protocol = { version = "0.10.4", features = ["unstable_session_fork"] }
