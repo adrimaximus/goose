@@ -43,14 +43,15 @@ const OUTPUT_CHAR_CAP: usize = 50_000;
 /// Truncate output using head+tail strategy (40% head, 60% tail) if it exceeds `OUTPUT_CHAR_CAP`.
 /// This preserves the beginning and end of the output while omitting the middle.
 fn truncate_output(s: &str) -> String {
-    if s.len() <= OUTPUT_CHAR_CAP {
+    let total_chars = s.chars().count();
+    if total_chars <= OUTPUT_CHAR_CAP {
         return s.to_string();
     }
-    let head_len = OUTPUT_CHAR_CAP * 2 / 5; // 40%
-    let tail_len = OUTPUT_CHAR_CAP - head_len; // 60%
-    let head = &s[..head_len];
-    let tail = &s[s.len() - tail_len..];
-    let omitted = s.len() - head_len - tail_len;
+    let head_chars = OUTPUT_CHAR_CAP * 2 / 5; // 40%
+    let tail_chars = OUTPUT_CHAR_CAP - head_chars; // 60%
+    let omitted = total_chars - head_chars - tail_chars;
+    let head: String = s.chars().take(head_chars).collect();
+    let tail: String = s.chars().skip(total_chars - tail_chars).collect();
     format!(
         "{}\n\n... [truncated: {} characters omitted] ...\n\n{}",
         head, omitted, tail
