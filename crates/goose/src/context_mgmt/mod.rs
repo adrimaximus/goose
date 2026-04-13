@@ -17,7 +17,7 @@ use tokio::task::JoinHandle;
 use tracing::info;
 use tracing::log::warn;
 
-pub const DEFAULT_COMPACTION_THRESHOLD: f64 = 0.8;
+pub const DEFAULT_COMPACTION_THRESHOLD: f64 = 0.5;
 
 const TOOLCALL_SUMMARIZATION_BATCH_SIZE: usize = 10;
 
@@ -312,11 +312,52 @@ async fn do_compact(
         .map(|msg| msg.agent_visible_content())
         .collect();
 
+    // Proactive tool result pruning: replace old tool results >200 chars with stubs
+    // BEFORE sending to the LLM summarizer. This is free (no API cost) and dramatically
+    // reduces what the summarizer has to process. Protects the most recent 20 messages.
+    let pruned_messages: Vec<Message> = {
+        let protect_tail = 20.min(agent_visible_messages.len());
+        let prune_boundary = agent_visible_messages.len().saturating_sub(protect_tail);
+        agent_visible_messages
+            .iter()
+            .enumerate()
+            .map(|(i, msg)| {
+                if i < prune_boundary {
+                    let mut pruned = msg.clone();
+                    pruned.content = pruned
+                        .content
+                        .into_iter()
+                        .map(|c| {
+                            if let MessageContent::ToolResponse(ref tr) = c {
+                                if let Ok(ref result) = tr.tool_result {
+                                    let text_len: usize = result
+                                        .content
+                                        .iter()
+                                        .filter_map(|rc| rc.as_text().map(|t| t.text.len()))
+                                        .sum();
+                                    if text_len > 200 {
+                                        return MessageContent::text(
+                                            "[Old tool output cleared to save context space]",
+                                        );
+                                    }
+                                }
+                            }
+                            c
+                        })
+                        .collect();
+                    pruned
+                } else {
+                    msg.clone()
+                }
+            })
+            .collect()
+    };
+
     // Try progressively removing more tool response messages from the middle to reduce context length
     let removal_percentages = [0, 10, 20, 50, 100];
 
     for (attempt, &remove_percent) in removal_percentages.iter().enumerate() {
-        let filtered_messages = filter_tool_responses(&agent_visible_messages, remove_percent);
+        let filtered_messages = filter_tool_responses(&pruned_messages, remove_percent);
 
         let messages_text = filtered_messages
             .iter()
@@ -771,9 +812,9 @@ mod tests {
         // Lower compaction threshold means earlier summarization
         assert_eq!(compute_tool_call_cutoff(200_000, 0.3), 10); // 60K effective
         assert_eq!(compute_tool_call_cutoff(1_000_000, 0.5), 75); // 500K effective
-                                                                  // Invalid threshold falls back to default 0.8
-        assert_eq!(compute_tool_call_cutoff(200_000, 0.0), 24); // falls back to 0.8
-        assert_eq!(compute_tool_call_cutoff(200_000, -1.0), 24); // falls back to 0.8
+                                                                  // Invalid threshold falls back to default 0.5
+        assert_eq!(compute_tool_call_cutoff(200_000, 0.0), 15); // falls back to 0.5
+        assert_eq!(compute_tool_call_cutoff(200_000, -1.0), 15); // falls back to 0.5
     }
 
     #[test]
