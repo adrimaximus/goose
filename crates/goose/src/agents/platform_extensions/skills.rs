@@ -234,6 +234,160 @@ impl SkillsClient {
 
         Ok(Self { info, working_dir })
     }
+
+    async fn handle_create_skill(
+        &self,
+        arguments: Option<JsonObject>,
+    ) -> Result<CallToolResult, Error> {
+        let name = arguments
+            .as_ref()
+            .and_then(|a| a.get("name"))
+            .and_then(|v| v.as_str())
+            .unwrap_or("");
+        let content = arguments
+            .as_ref()
+            .and_then(|a| a.get("content"))
+            .and_then(|v| v.as_str())
+            .unwrap_or("");
+
+        if name.is_empty() || content.is_empty() {
+            return Ok(CallToolResult::error(vec![Content::text(
+                "Missing required parameters: name and content",
+            )]));
+        }
+
+        // Validate name
+        if name.len() > 64
+            || name.contains('/')
+            || !name
+                .chars()
+                .all(|c| c.is_ascii_lowercase() || c == '-' || c == '_' || c.is_ascii_digit())
+        {
+            return Ok(CallToolResult::error(vec![Content::text(
+                "Invalid skill name. Use lowercase letters, hyphens, underscores, digits. Max 64 chars. No slashes.",
+            )]));
+        }
+
+        // Validate frontmatter
+        if !content.starts_with("---") {
+            return Ok(CallToolResult::error(vec![Content::text(
+                "Skill content must start with YAML frontmatter (---\\nname: ...\\ndescription: ...\\n---)",
+            )]));
+        }
+
+        // Write to global config skills directory
+        let skill_dir = Paths::config_dir().join("skills").join(name);
+        let skill_path = skill_dir.join("SKILL.md");
+
+        if skill_path.exists() {
+            return Ok(CallToolResult::error(vec![Content::text(format!(
+                "Skill '{}' already exists. Use patch_skill to update it.",
+                name
+            ))]));
+        }
+
+        if let Err(e) = std::fs::create_dir_all(&skill_dir) {
+            return Ok(CallToolResult::error(vec![Content::text(format!(
+                "Failed to create skill directory: {}",
+                e
+            ))]));
+        }
+
+        if let Err(e) = std::fs::write(&skill_path, content) {
+            return Ok(CallToolResult::error(vec![Content::text(format!(
+                "Failed to write skill: {}",
+                e
+            ))]));
+        }
+
+        Ok(CallToolResult::success(vec![Content::text(format!(
+            "Created skill '{}' at {}",
+            name,
+            skill_path.display()
+        ))]))
+    }
+
+    async fn handle_patch_skill(
+        &self,
+        arguments: Option<JsonObject>,
+    ) -> Result<CallToolResult, Error> {
+        let name = arguments
+            .as_ref()
+            .and_then(|a| a.get("name"))
+            .and_then(|v| v.as_str())
+            .unwrap_or("");
+        let old_text = arguments
+            .as_ref()
+            .and_then(|a| a.get("old_text"))
+            .and_then(|v| v.as_str())
+            .unwrap_or("");
+        let new_text = arguments
+            .as_ref()
+            .and_then(|a| a.get("new_text"))
+            .and_then(|v| v.as_str())
+            .unwrap_or("");
+
+        if name.is_empty() || old_text.is_empty() {
+            return Ok(CallToolResult::error(vec![Content::text(
+                "Missing required parameters: name and old_text",
+            )]));
+        }
+
+        let skills = discover_skills(&self.working_dir);
+        let skill = skills.iter().find(|s| s.name == name);
+
+        let Some(skill) = skill else {
+            return Ok(CallToolResult::error(vec![Content::text(format!(
+                "Skill '{}' not found",
+                name
+            ))]));
+        };
+
+        if matches!(skill.kind, SourceKind::BuiltinSkill) {
+            return Ok(CallToolResult::error(vec![Content::text(
+                "Cannot patch builtin skills. Create a new skill instead.",
+            )]));
+        }
+
+        let skill_path = skill.path.join("SKILL.md");
+        let content = match std::fs::read_to_string(&skill_path) {
+            Ok(c) => c,
+            Err(e) => {
+                return Ok(CallToolResult::error(vec![Content::text(format!(
+                    "Failed to read skill: {}",
+                    e
+                ))]));
+            }
+        };
+
+        let matches: Vec<_> = content.match_indices(old_text).collect();
+        if matches.is_empty() {
+            return Ok(CallToolResult::error(vec![Content::text(
+                "old_text not found in skill. Load the skill first to see current content.",
+            )]));
+        }
+        if matches.len() > 1 {
+            return Ok(CallToolResult::error(vec![Content::text(format!(
+                "old_text matches {} locations. Use a more specific string.",
+                matches.len()
+            ))]));
+        }
+
+        let new_content = content.replacen(old_text, new_text, 1);
+        if let Err(e) = std::fs::write(&skill_path, &new_content) {
+            return Ok(CallToolResult::error(vec![Content::text(format!(
+                "Failed to write skill: {}",
+                e
+            ))]));
+        }
+
+        Ok(CallToolResult::success(vec![Content::text(format!(
+            "Patched skill '{}' — replaced {} chars with {} chars",
+            name,
+            old_text.len(),
+            new_text.len()
+        ))]))
+    }
 }
 
 #[async_trait]
@@ -267,8 +421,59 @@ impl McpClientTrait for SkillsClient {
             schema.as_object().unwrap().clone(),
         );
 
+        let create_schema = serde_json::json!({
+            "type": "object",
+            "required": ["name", "content"],
+            "properties": {
+                "name": {
+                    "type": "string",
+                    "description": "Skill name (lowercase, hyphens/underscores, max 64 chars). e.g. 'docker-networking'"
+                },
+                "content": {
+                    "type": "string",
+                    "description": "Full SKILL.md content including YAML frontmatter (---\\nname: ...\\ndescription: ...\\n---\\nBody...)"
+                }
+            }
+        });
+
+        let create_tool = Tool::new(
+            "create_skill",
+            "Create a new skill from experience. Use after complex tasks (5+ tool calls, error recovery, \
+             non-obvious workflows) to save a reusable approach. The content must include YAML frontmatter \
+             with name and description fields."
+                .to_string(),
+            create_schema.as_object().unwrap().clone(),
+        );
+
+        let patch_schema = serde_json::json!({
+            "type": "object",
+            "required": ["name", "old_text", "new_text"],
+            "properties": {
+                "name": {
+                    "type": "string",
+                    "description": "Name of the skill to patch"
+                },
+                "old_text": {
+                    "type": "string",
+                    "description": "Text to find in the skill (must match uniquely)"
+                },
+                "new_text": {
+                    "type": "string",
+                    "description": "Replacement text"
+                }
+            }
+        });
+
+        let patch_tool = Tool::new(
+            "patch_skill",
+            "Update an existing skill by replacing a section of text. Use when you loaded a skill and \
+             found it wrong, incomplete, or outdated. The old_text must match exactly one location in the skill."
+                .to_string(),
+            patch_schema.as_object().unwrap().clone(),
+        );
+
         Ok(ListToolsResult {
-            tools: vec![tool],
+            tools: vec![tool, create_tool, patch_tool],
             next_cursor: None,
             meta: None,
         })
@@ -281,11 +486,16 @@ impl McpClientTrait for SkillsClient {
         arguments: Option<JsonObject>,
         _cancellation_token: CancellationToken,
     ) -> Result<CallToolResult, Error> {
-        if name != "load_skill" {
-            return Ok(CallToolResult::error(vec![Content::text(format!(
-                "Unknown tool: {}",
-                name
-            ))]));
+        match name {
+            "create_skill" => return self.handle_create_skill(arguments).await,
+            "patch_skill" => return self.handle_patch_skill(arguments).await,
+            "load_skill" => {}
+            _ => {
+                return Ok(CallToolResult::error(vec![Content::text(format!(
+                    "Unknown tool: {}",
+                    name
+                ))]));
+            }
         }
 
         let skill_name = arguments
@@ -498,6 +708,179 @@ mod tests {
             serde_json::from_value(serde_json::json!({"name": "nonexistent"})).unwrap();
         let result = client
             .call_tool(&ctx, "load_skill", Some(args), CancellationToken::new())
+            .await
+            .unwrap();
+
+        assert!(result.is_error.unwrap_or(false));
+    }
+
+    #[tokio::test]
+    async fn test_create_skill_writes_to_disk() {
+        let temp_dir = TempDir::new().unwrap();
+
+        let client = SkillsClient {
+            info: InitializeResult::new(ServerCapabilities::builder().enable_tools().build()),
+            working_dir: temp_dir.path().to_path_buf(),
+        };
+
+        let args: JsonObject = serde_json::from_value(serde_json::json!({
+            "name": "test-skill",
+            "content": "---\nname: test-skill\ndescription: A test\n---\nDo stuff."
+        }))
+        .unwrap();
+
+        let ctx = ToolCallContext::new("test".to_string(), None, None);
+        let result = client
+            .call_tool(&ctx, "create_skill", Some(args), CancellationToken::new())
+            .await
+            .unwrap();
+
+        assert!(!result.is_error.unwrap_or(false));
+        let text = match &result.content[0].raw {
+            rmcp::model::RawContent::Text(t) => &t.text,
+            _ => panic!("expected text"),
+        };
+        assert!(text.contains("Created skill"));
+
+        // Verify file exists
+        let skill_path = Paths::config_dir().join("skills/test-skill/SKILL.md");
+        assert!(skill_path.exists());
+        let content = fs::read_to_string(&skill_path).unwrap();
+        assert!(content.contains("Do stuff."));
+
+        // Cleanup
+        let _ = fs::remove_dir_all(Paths::config_dir().join("skills/test-skill"));
+    }
+
+    #[tokio::test]
+    async fn test_create_skill_rejects_invalid_name() {
+        let temp_dir = TempDir::new().unwrap();
+        let client = SkillsClient {
+            info: InitializeResult::new(ServerCapabilities::builder().enable_tools().build()),
+            working_dir: temp_dir.path().to_path_buf(),
+        };
+
+        let ctx = ToolCallContext::new("test".to_string(), None, None);
+
+        // Uppercase
+        let args: JsonObject = serde_json::from_value(serde_json::json!({
+            "name": "BadName",
+            "content": "---\nname: bad\ndescription: bad\n---\n"
+        }))
+        .unwrap();
+        let result = client
+            .call_tool(&ctx, "create_skill", Some(args), CancellationToken::new())
+            .await
+            .unwrap();
+        assert!(result.is_error.unwrap_or(false));
+
+        // Slash
+        let args: JsonObject = serde_json::from_value(serde_json::json!({
+            "name": "bad/name",
+            "content": "---\nname: bad\ndescription: bad\n---\n"
+        }))
+        .unwrap();
+        let result = client
+            .call_tool(&ctx, "create_skill", Some(args), CancellationToken::new())
+            .await
+            .unwrap();
+        assert!(result.is_error.unwrap_or(false));
+    }
+
+    #[tokio::test]
+    async fn test_create_skill_rejects_missing_frontmatter() {
+        let temp_dir = TempDir::new().unwrap();
+        let client = SkillsClient {
+            info: InitializeResult::new(ServerCapabilities::builder().enable_tools().build()),
+            working_dir: temp_dir.path().to_path_buf(),
+        };
+
+        let ctx = ToolCallContext::new("test".to_string(), None, None);
+        let args: JsonObject = serde_json::from_value(serde_json::json!({
+            "name": "no-frontmatter",
+            "content": "Just some text without frontmatter"
+        }))
+        .unwrap();
+        let result = client
+            .call_tool(&ctx, "create_skill", Some(args), CancellationToken::new())
+            .await
+            .unwrap();
+        assert!(result.is_error.unwrap_or(false));
+    }
+
+    #[tokio::test]
+    async fn test_patch_skill_updates_content() {
+        let temp_dir = TempDir::new().unwrap();
+        let skill_dir = temp_dir.path().join(".goose/skills/patch-test");
+        fs::create_dir_all(&skill_dir).unwrap();
+        fs::write(
+            skill_dir.join("SKILL.md"),
+            "---\nname: patch-test\ndescription: Test\n---\nStep 1: Do old thing.\nStep 2: Done.",
+        )
+        .unwrap();
+
+        let session = Arc::new(crate::session::Session {
+            working_dir: temp_dir.path().to_path_buf(),
+            ..crate::session::Session::default()
+        });
+        let client = SkillsClient::new(PlatformExtensionContext {
+            extension_manager: None,
+            session_manager: Arc::new(crate::session::SessionManager::instance()),
+            session: Some(session),
+        })
+        .unwrap();
+
+        let ctx = ToolCallContext::new("test".to_string(), None, None);
+        let args: JsonObject = serde_json::from_value(serde_json::json!({
+            "name": "patch-test",
+            "old_text": "Do old thing.",
+            "new_text": "Do new thing."
+        }))
+        .unwrap();
+        let result = client
+            .call_tool(&ctx, "patch_skill", Some(args), CancellationToken::new())
+            .await
+            .unwrap();
+
+        assert!(!result.is_error.unwrap_or(false));
+
+        let content = fs::read_to_string(skill_dir.join("SKILL.md")).unwrap();
+        assert!(content.contains("Do new thing."));
+        assert!(!content.contains("Do old thing."));
+        assert!(content.contains("Step 2: Done."));
+    }
+
+    #[tokio::test]
+    async fn test_patch_skill_rejects_ambiguous_match() {
+        let temp_dir = TempDir::new().unwrap();
+        let skill_dir = temp_dir.path().join(".goose/skills/ambig-test");
+        fs::create_dir_all(&skill_dir).unwrap();
+        fs::write(
+            skill_dir.join("SKILL.md"),
+            "---\nname: ambig-test\ndescription: Test\n---\nfoo bar\nfoo baz",
+        )
+        .unwrap();
+
+        let session = Arc::new(crate::session::Session {
+            working_dir: temp_dir.path().to_path_buf(),
+            ..crate::session::Session::default()
+        });
+        let client = SkillsClient::new(PlatformExtensionContext {
+            extension_manager: None,
+            session_manager: Arc::new(crate::session::SessionManager::instance()),
+            session: Some(session),
+        })
+        .unwrap();
+
+        let ctx = ToolCallContext::new("test".to_string(), None, None);
+        let args: JsonObject = serde_json::from_value(serde_json::json!({
+            "name": "ambig-test",
+            "old_text": "foo",
+            "new_text": "replaced"
+        }))
+        .unwrap();
+        let result = client
+            .call_tool(&ctx, "patch_skill", Some(args), CancellationToken::new())
             .await
             .unwrap();
 
