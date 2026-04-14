@@ -2,7 +2,7 @@
 
 ## Objective
 
-Add a single new Tauri command that returns the HTTP base URL of the running `goose serve` process. The frontend will use this URL to connect directly via HTTP+SSE.
+Add a single new Tauri command that returns the WebSocket URL of the running `goose serve` process. The frontend will use this URL to connect directly via WebSocket.
 
 ## Why
 
@@ -10,24 +10,26 @@ Currently the Rust layer connects to `goose serve` over WebSocket internally and
 
 ## Changes
 
-### 1. Make `port` accessible on `GooseServeProcess`
+### 1. Add a public URL getter on `GooseServeProcess`
 
 **File:** `src-tauri/src/services/acp/goose_serve.rs`
 
-Add a public getter for the port:
+The struct already has a `ws_url()` method that returns `ws://127.0.0.1:<port>/acp`. We just need to make sure it (or an equivalent) is accessible from the command layer. Currently `ws_url()` is `pub` on the struct, so it's already usable. No change needed to the struct itself.
+
+If you prefer a separate method name to distinguish from the internal usage:
 
 ```rust
 impl GooseServeProcess {
-    /// Return the HTTP base URL for this server (used by the frontend).
-    pub fn http_url(&self) -> String {
-        format!("http://{LOCALHOST}:{}", self.port)
+    /// Return the WebSocket URL for the frontend to connect to directly.
+    pub fn frontend_ws_url(&self) -> String {
+        format!("ws://{LOCALHOST}:{}/acp", self.port)
     }
 
-    // ... existing methods unchanged ...
+    // ... existing ws_url() method is identical, kept for backward compat ...
 }
 ```
 
-The `port` field is already stored on the struct but is only used internally via `ws_url()`. The new `http_url()` method provides the HTTP variant.
+Or simply reuse `ws_url()` — it returns the same thing.
 
 ### 2. Add the Tauri command
 
@@ -36,17 +38,17 @@ The `port` field is already stored on the struct but is only used internally via
 Add this command alongside the existing ones (it will coexist during migration):
 
 ```rust
-/// Return the HTTP base URL of the running goose serve process.
+/// Return the WebSocket URL of the running goose serve process.
 ///
 /// This command blocks until the server is confirmed ready. The frontend
-/// uses this URL to establish a direct HTTP+SSE ACP connection.
+/// uses this URL to establish a direct WebSocket ACP connection.
 #[tauri::command]
 pub async fn get_goose_serve_url() -> Result<String, String> {
     // GooseServeProcess::start() is idempotent — it returns immediately
     // if the process is already running.
     GooseServeProcess::start().await?;
     let process = GooseServeProcess::get()?;
-    Ok(process.http_url())
+    Ok(process.ws_url())
 }
 ```
 
@@ -74,7 +76,7 @@ commands::acp::get_goose_serve_url,
 
 Place it near the other `commands::acp::*` entries.
 
-### 4. Verify CSP allows localhost fetch
+### 4. Verify CSP allows localhost WebSocket
 
 **File:** `src-tauri/tauri.conf.json`
 
@@ -87,11 +89,11 @@ Check the `security.csp` field. Currently it is:
 }
 ```
 
-`null` means CSP is disabled — **no changes needed**. The frontend can freely fetch from `http://127.0.0.1:*`.
+`null` means CSP is disabled — **no changes needed**. The frontend can freely open WebSocket connections to `ws://127.0.0.1:*`.
 
 If CSP were ever re-enabled, you'd need to add:
 ```
-connect-src 'self' http://127.0.0.1:* ws://127.0.0.1:*
+connect-src 'self' ws://127.0.0.1:*
 ```
 
 ## Verification
@@ -99,13 +101,13 @@ connect-src 'self' http://127.0.0.1:* ws://127.0.0.1:*
 1. Run `just tauri-check` (or `cargo check` in `src-tauri/`) to confirm the Rust compiles.
 2. Run `cargo clippy --all-targets -- -D warnings` in `src-tauri/`.
 3. Run `cargo fmt` in `src-tauri/`.
-4. Manually test by adding a temporary `console.log(await invoke("get_goose_serve_url"))` in the frontend startup — it should print something like `http://127.0.0.1:54321`.
+4. Manually test by adding a temporary `console.log(await invoke("get_goose_serve_url"))` in the frontend startup — it should print something like `ws://127.0.0.1:54321/acp`.
 
 ## Files Modified
 
 | File | Change |
 |------|--------|
-| `src-tauri/src/services/acp/goose_serve.rs` | Add `http_url()` method |
+| `src-tauri/src/services/acp/goose_serve.rs` | Optionally add `frontend_ws_url()`, or reuse existing `ws_url()` |
 | `src-tauri/src/services/acp/mod.rs` | Add `pub(crate) use goose_serve::GooseServeProcess` if needed |
 | `src-tauri/src/commands/acp.rs` | Add `get_goose_serve_url` command |
 | `src-tauri/src/lib.rs` | Register `get_goose_serve_url` in invoke_handler |
@@ -114,4 +116,5 @@ connect-src 'self' http://127.0.0.1:* ws://127.0.0.1:*
 
 - The existing ACP commands remain functional during migration. They will be removed in Step 09.
 - `GooseServeProcess::start()` is idempotent — calling it multiple times is safe. The first call spawns the process; subsequent calls return immediately.
-- The readiness check (WebSocket probe loop) ensures the URL is only returned after the server is accepting connections.
+- The readiness check (WebSocket probe loop in `wait_for_server_ready`) ensures the URL is only returned after the server is accepting connections.
+- The URL includes the `/acp` path because that's the WebSocket endpoint on `goose serve`. The frontend connects to this directly — same endpoint the Rust layer currently uses in `thread.rs`.

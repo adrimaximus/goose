@@ -6,7 +6,7 @@ Replace all `invoke()` calls in `src/shared/api/acp.ts` with calls to the new Ty
 
 ## Why
 
-`src/shared/api/acp.ts` is the single import point for all ACP operations in the frontend. Currently every function calls `invoke("acp_*")` which goes through Tauri IPC → Rust → WebSocket → goose serve. After this step, they call the TypeScript session manager which goes directly through HTTP+SSE → goose serve.
+`src/shared/api/acp.ts` is the single import point for all ACP operations in the frontend. Currently every function calls `invoke("acp_*")` which goes through Tauri IPC → Rust → WebSocket → goose serve. After this step, they call the TypeScript session manager which goes directly through WebSocket → goose serve.
 
 ## Changes
 

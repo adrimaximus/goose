@@ -6,7 +6,7 @@ Remove all Rust ACP protocol handling code that is no longer called by the front
 
 ## Why
 
-After Steps 01–08, the frontend communicates directly with `goose serve` via HTTP+SSE. The Rust ACP middleware (WebSocket bridge, session dispatcher, message writer, session registry, search) is dead code. Removing it:
+After Steps 01–08, the frontend communicates directly with `goose serve` via WebSocket. The Rust ACP middleware (WebSocket bridge, session dispatcher, message writer, session registry, search) is dead code. Removing it:
 
 - Eliminates ~3,500 lines of Rust
 - Removes 5–6 heavy crate dependencies
@@ -64,15 +64,15 @@ Replace the entire file with just the URL command:
 ```rust
 use crate::services::acp::GooseServeProcess;
 
-/// Return the HTTP base URL of the running goose serve process.
+/// Return the WebSocket URL of the running goose serve process.
 ///
 /// This command blocks until the server is confirmed ready. The frontend
-/// uses this URL to establish a direct HTTP+SSE ACP connection.
+/// uses this URL to establish a direct WebSocket ACP connection.
 #[tauri::command]
 pub async fn get_goose_serve_url() -> Result<String, String> {
     GooseServeProcess::start().await?;
     let process = GooseServeProcess::get()?;
-    Ok(process.http_url())
+    Ok(process.ws_url())
 }
 ```
 
@@ -169,14 +169,7 @@ The `Arc` import can be removed if nothing else uses it. Check if `PersonaStore`
 
 The file is mostly kept as-is. Make these changes:
 
-1. Add the `http_url()` method (from Step 01):
-```rust
-impl GooseServeProcess {
-    pub fn http_url(&self) -> String {
-        format!("http://{LOCALHOST}:{}", self.port)
-    }
-}
-```
+1. The `ws_url()` method already exists on `GooseServeProcess` — no new method needed. Step 01 already wired `get_goose_serve_url` to call `process.ws_url()`.
 
 2. Remove the `WS_BRIDGE_BUFFER_BYTES` constant — it was only used by the WebSocket bridge in `thread.rs`:
 ```rust
@@ -367,7 +360,7 @@ Plus significant simplification of `commands/acp.rs` (~330 → ~15 lines) and `s
 | File | Change |
 |------|--------|
 | `src-tauri/src/services/acp/mod.rs` | Simplified to just goose_serve re-export |
-| `src-tauri/src/services/acp/goose_serve.rs` | Add `http_url()`, remove WS constants, replace readiness probe |
+| `src-tauri/src/services/acp/goose_serve.rs` | Remove `WS_BRIDGE_BUFFER_BYTES` constant, replace readiness probe with TCP connect |
 | `src-tauri/src/commands/acp.rs` | Replaced with single `get_goose_serve_url` command |
 | `src-tauri/src/lib.rs` | Remove AcpSessionRegistry, old ACP commands, simplify run closure |
 | `src-tauri/Cargo.toml` | Remove 6 dependencies |

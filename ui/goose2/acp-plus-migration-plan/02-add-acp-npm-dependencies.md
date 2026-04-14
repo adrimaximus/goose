@@ -9,8 +9,8 @@ Add `@aaif/goose-acp` and `@agentclientprotocol/sdk` as dependencies of the goos
 The `@aaif/goose-acp` package (located at `ui/acp/` in the monorepo) already provides:
 
 - **`GooseClient`** — a full TypeScript ACP client wrapping `ClientSideConnection`
-- **`createHttpStream`** — an HTTP+SSE transport that speaks the same protocol as `goose serve`
 - **`GooseExtClient`** — generated typed client for Goose extension methods (`goose/providers/list`, `goose/session/export`, etc.)
+- **`createHttpStream`** — an HTTP+SSE transport (we won't use this — we'll use WebSocket instead, see Step 03)
 - **Generated types + Zod validators** for all Goose ACP extension method request/response shapes
 
 This package is already used by `ui/desktop` (Electron) and `ui/text` (Ink TUI). goose2 currently does NOT depend on it.
@@ -67,11 +67,10 @@ Create a temporary test file to confirm imports resolve:
 
 ```typescript
 // src/shared/api/_test_acp_import.ts (DELETE AFTER VERIFICATION)
-import { GooseClient, createHttpStream } from "@aaif/goose-acp";
+import { GooseClient } from "@aaif/goose-acp";
 import type { Client, SessionNotification } from "@agentclientprotocol/sdk";
 
 console.log("GooseClient:", GooseClient);
-console.log("createHttpStream:", createHttpStream);
 ```
 
 Run `pnpm typecheck` to confirm no type errors. Then delete the test file.
@@ -82,7 +81,7 @@ The following imports must resolve — these are what Steps 03–06 will use:
 
 From `@aaif/goose-acp`:
 ```typescript
-import { GooseClient, createHttpStream } from "@aaif/goose-acp";
+import { GooseClient } from "@aaif/goose-acp";
 ```
 
 From `@agentclientprotocol/sdk`:
@@ -146,5 +145,6 @@ pnpm add @agentclientprotocol/sdk@^0.14.1
 ## Notes
 
 - The `@aaif/goose-acp` package exports `GooseClient` which wraps `ClientSideConnection` from `@agentclientprotocol/sdk`. It adds Goose-specific extension methods via `GooseExtClient`.
-- The `createHttpStream` function creates a `Stream` (a `{ readable, writable }` pair of `ReadableStream<AnyMessage>` and `WritableStream<AnyMessage>`) that communicates with `goose serve` over HTTP POST + SSE.
-- The HTTP+SSE transport works by: (1) POSTing JSON-RPC messages to `/acp`, (2) receiving responses and notifications via Server-Sent Events on the same connection. The first POST (initialize) establishes the SSE stream; subsequent POSTs use the `Acp-Session-Id` header.
+- The package currently ships `createHttpStream` (HTTP+SSE transport). We will use **WebSocket** transport instead. The `GooseClient` constructor accepts any `Stream` (a `{ readable, writable }` pair of `ReadableStream<AnyMessage>` and `WritableStream<AnyMessage>`). In Step 03 we'll create a `createWebSocketStream` helper — either locally in goose2 or contributed to `@aaif/goose-acp`.
+- The `goose serve` WebSocket endpoint at `/acp` uses simple framing: each WS text frame is a single JSON-RPC message (no newline delimiters needed). This is the same transport the Rust Tauri backend already uses in `thread.rs`.
+- If we decide to add `createWebSocketStream` to `@aaif/goose-acp` itself (we control the package), it would be exported alongside `createHttpStream` and available to all consumers.
