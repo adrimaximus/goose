@@ -1,11 +1,12 @@
-import { beforeAll, beforeEach, afterAll, onTestFailed } from "vitest";
+import path from "node:path";
+import { beforeAll, beforeEach, afterAll, expect, onTestFailed } from "vitest";
 import { type AppRuntime, startAppForTestFile } from "./app-runtime";
 import { type TestDriver, createTestDriver } from "./test-driver-client";
 
 declare const __SCREENSHOT_DIR__: string;
 declare const __SCREENSHOT_ON_FAILURE__: boolean;
 
-export const useTestDriver = (testFileId: string): TestDriver => {
+export const useTestDriver = (): TestDriver => {
   let inner: TestDriver;
   let runtime: AppRuntime;
 
@@ -19,6 +20,8 @@ export const useTestDriver = (testFileId: string): TestDriver => {
 
   beforeAll(async () => {
     try {
+      const testPath = expect.getState().testPath ?? "unknown";
+      const testFileId = path.basename(testPath, ".test.ts");
       runtime = await startAppForTestFile(testFileId);
       inner = await createTestDriver({ port: runtime.port });
     } catch (error) {

@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import { useTestDriver } from "./lib/setup";
 
 describe("Chat", () => {
-  const testDriver = useTestDriver("chat");
+  const testDriver = useTestDriver();
 
   it("returns formatted date when asked", async () => {
     await testDriver.fill(
