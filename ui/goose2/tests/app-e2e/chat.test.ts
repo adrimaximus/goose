@@ -5,7 +5,6 @@ describe("Chat", () => {
   const testDriver = useTestDriver("chat");
 
   it("returns formatted date when asked", async () => {
-    await new Promise((resolve) => setTimeout(resolve, 5000));
     await testDriver.fill(
       '[data-testid="chat-input"]',
       'Show me the date of Jan 26 2025 in format of "dd-mm-yyyy"',

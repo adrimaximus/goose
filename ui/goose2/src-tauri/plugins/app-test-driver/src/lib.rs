@@ -184,7 +184,6 @@ fn build_js(cmd: &TestCommand) -> String {
                             }}
 
                             el.focus();
-                            const previousValue = el.value ?? "";
                             const proto = el instanceof HTMLTextAreaElement
                                 ? HTMLTextAreaElement.prototype
                                 : HTMLInputElement.prototype;
@@ -193,20 +192,7 @@ fn build_js(cmd: &TestCommand) -> String {
                                 return "ERROR: value setter not found";
                             }}
 
-                            el.dispatchEvent(new InputEvent('beforeinput', {{
-                                bubbles: true,
-                                cancelable: true,
-                                data: "{val}",
-                                inputType: 'insertText'
-                            }}));
                             setter.call(el, "{val}");
-                            if (typeof el.setSelectionRange === 'function') {{
-                                el.setSelectionRange(el.value.length, el.value.length);
-                            }}
-                            const tracker = el._valueTracker;
-                            if (tracker) {{
-                                tracker.setValue(previousValue);
-                            }}
                             el.dispatchEvent(new InputEvent('input', {{
                                 bubbles: true,
                                 cancelable: true,
@@ -215,12 +201,15 @@ fn build_js(cmd: &TestCommand) -> String {
                             }}));
                             el.dispatchEvent(new Event('change', {{ bubbles: true }}));
 
-                            await new Promise((resolve) => requestAnimationFrame(() => resolve()));
-                            await new Promise((resolve) => requestAnimationFrame(() => resolve()));
-
-                            if (el.value !== "{val}") {{
-                                continue;
+                            // Verify the value survives React re-renders
+                            // (store initialization can trigger re-renders that
+                            // reset controlled component state).
+                            let stable = true;
+                            for (let i = 0; i < 5; i++) {{
+                                await new Promise(r => setTimeout(r, 200));
+                                if (el.value !== "{val}") {{ stable = false; break; }}
                             }}
+                            if (!stable) continue;
 
                             return "filled";
                         }}
