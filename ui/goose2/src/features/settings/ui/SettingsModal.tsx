@@ -140,7 +140,9 @@ export function SettingsModal({
   }, [showRestartCard]);
 
   useEffect(() => {
-    if (activeSection !== "providers" && showRestartCard) {
+    if (activeSection === "providers") {
+      restartDismissedRef.current = false;
+    } else if (showRestartCard) {
       setRestartCardVisible(false);
       setShowRestartCard(false);
       restartDismissedRef.current = true;
