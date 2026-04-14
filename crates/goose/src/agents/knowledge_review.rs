@@ -74,16 +74,18 @@ const FLUSH_PROMPT: &str = "[System: The session context is being compressed. Sa
 /// Spawn a background task to review the conversation for memory and/or skill saves.
 ///
 /// Runs AFTER the reply is delivered. The user never sees this.
+#[allow(clippy::too_many_arguments)]
 pub fn spawn_background_review(
     provider: Arc<dyn Provider>,
     extension_manager: Arc<ExtensionManager>,
+    session_manager: Arc<crate::session::SessionManager>,
     conversation: Conversation,
     session_id: String,
     working_dir: std::path::PathBuf,
     review_memory: bool,
     review_skills: bool,
 ) {
-    let prompt = if review_memory && review_skills {
+    let base_prompt = if review_memory && review_skills {
         COMBINED_REVIEW_PROMPT
     } else if review_skills {
         SKILL_REVIEW_PROMPT
@@ -99,14 +101,26 @@ pub fn spawn_background_review(
         "memory_review"
     };
 
+    let sid = session_id.clone();
     tokio::spawn(async move {
+        // Query past sessions for cross-session patterns
+        let session_context = build_session_context(&session_manager, &sid).await;
+        let prompt = if session_context.is_empty() {
+            base_prompt.to_string()
+        } else {
+            format!(
+                "{}\n\nContext from past sessions (consider saving recurring patterns):\n{}",
+                base_prompt, session_context
+            )
+        };
+
         if let Err(e) = run_knowledge_extraction(
             provider.as_ref(),
             &extension_manager,
             &conversation,
-            &session_id,
+            &sid,
             &working_dir,
-            prompt,
+            &prompt,
             task_name,
             ReviewScope {
                 include_memory_tools: review_memory,
@@ -118,6 +132,61 @@ pub fn spawn_background_review(
             warn!("Background {} failed: {}", task_name, e);
         }
     });
+}
+
+/// Query recent past sessions for recurring patterns to feed into the review.
+///
+/// Extracts key user messages from recent sessions to help the review agent
+/// notice cross-session patterns (e.g. "user always does X", "this tool quirk
+/// keeps coming up").
+async fn build_session_context(
+    session_manager: &crate::session::SessionManager,
+    exclude_session_id: &str,
+) -> String {
+    use crate::session::session_manager::SessionType;
+
+    // Search recent sessions for user messages (broad query)
+    let results = session_manager
+        .search_chat_history(
+            "*", // broad search
+            Some(5),
+            None,
+            None,
+            Some(exclude_session_id.to_string()),
+            vec![SessionType::User],
+        )
+        .await;
+
+    let Ok(results) = results else {
+        return String::new();
+    };
+
+    if results.results.is_empty() {
+        return String::new();
+    }
+
+    let mut context = String::new();
+    for session in results.results.iter().take(3) {
+        if session.messages.is_empty() {
+            continue;
+        }
+        context.push_str(&format!(
+            "\n[Session: {} ({})]\n",
+            session.session_description, session.last_activity
+        ));
+        for msg in session.messages.iter().take(5) {
+            let preview: String = msg.content.chars().take(200).collect();
+            context.push_str(&format!("  {}: {}\n", msg.role, preview));
+        }
+    }
+
+    // Cap at 2000 chars to avoid bloating the review prompt
+    if context.len() > 2000 {
+        context.truncate(2000);
+        context.push_str("\n[...truncated]");
+    }
+
+    context
 }
 
 /// Run the pre-compression flush synchronously before compaction.

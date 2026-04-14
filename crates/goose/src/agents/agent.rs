@@ -1825,6 +1825,7 @@ impl Agent {
                     super::knowledge_review::spawn_background_review(
                         provider,
                         Arc::clone(&self.extension_manager),
+                        Arc::clone(&self.config.session_manager),
                         conversation.clone(),
                         session_config.id.clone(),
                         working_dir.clone(),
