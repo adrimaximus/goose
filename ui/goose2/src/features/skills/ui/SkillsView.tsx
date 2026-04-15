@@ -56,32 +56,34 @@ function SkillCardMenu({
   const { t } = useTranslation(["skills", "common"]);
 
   return (
-    <DropdownMenu>
+    <DropdownMenu modal={false}>
       <DropdownMenuTrigger asChild>
         <Button
           type="button"
           variant="ghost"
           size="icon-xs"
           aria-label={t("view.optionsAria", { name: skill.name })}
+          data-testid={`skill-options-${skill.name}`}
           className="size-6 rounded-md text-muted-foreground hover:text-foreground"
         >
           <MoreHorizontal className="size-3.5" />
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" sideOffset={4}>
-        <DropdownMenuItem onSelect={() => onEdit(skill)}>
+        <DropdownMenuItem data-testid="skill-menu-edit" onSelect={() => onEdit(skill)}>
           <Pencil className="size-3.5" />
           {t("common:actions.edit")}
         </DropdownMenuItem>
-        <DropdownMenuItem onSelect={() => onDuplicate(skill)}>
+        <DropdownMenuItem data-testid="skill-menu-duplicate" onSelect={() => onDuplicate(skill)}>
           <Copy className="size-3.5" />
           {t("common:actions.duplicate")}
         </DropdownMenuItem>
-        <DropdownMenuItem onSelect={() => onExport(skill)}>
+        <DropdownMenuItem data-testid="skill-menu-export" onSelect={() => onExport(skill)}>
           <Download className="size-3.5" />
           {t("common:actions.export")}
         </DropdownMenuItem>
         <DropdownMenuItem
+          data-testid="skill-menu-delete"
           variant="destructive"
           onSelect={() => onDelete(skill)}
         >
@@ -273,6 +275,7 @@ export function SkillsView() {
                 type="button"
                 variant="outline-flat"
                 size="xs"
+                data-testid="skills-new-button"
                 onClick={handleNewSkill}
               >
                 <Plus className="size-3.5" />
@@ -294,6 +297,7 @@ export function SkillsView() {
               {filtered.map((skill) => (
                 <div
                   key={skill.name}
+                  data-testid={`skill-card-${skill.name}`}
                   className="flex items-start justify-between gap-3 rounded-lg border border-border px-4 py-3"
                 >
                   <div className="min-w-0 flex-1">
@@ -405,8 +409,9 @@ export function SkillsView() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>{t("common:actions.cancel")}</AlertDialogCancel>
+            <AlertDialogCancel data-testid="skill-delete-cancel">{t("common:actions.cancel")}</AlertDialogCancel>
             <AlertDialogAction
+              data-testid="skill-delete-confirm"
               className={buttonVariants({ variant: "destructive" })}
               onClick={handleConfirmDeleteSkill}
             >

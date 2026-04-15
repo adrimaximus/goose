@@ -451,6 +451,7 @@ export function Sidebar({
                     navItemRefs.current[item.id] = el;
                   }}
                   type="button"
+                  data-testid={`nav-${item.id}`}
                   onClick={() => onNavigate?.(item.id)}
                   onMouseEnter={onItemMouseEnter}
                   title={collapsed ? item.label : undefined}

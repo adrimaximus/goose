@@ -18,29 +18,23 @@ Given a test scenario in natural language, you will:
 
 ## Prerequisites
 
-The Tauri app must already be running in dev mode with the app test driver enabled.
+Start an isolated app instance for exploration:
+
+```bash
+pnpm test-driver start --session <id>
+```
+
+Pick a session ID based on the feature you're exploring (e.g., `chat`, `personas`, `skills`). Use the same ID in subsequent `--session` commands to connect to this instance.
 
 ## Test Driver CLI
 
-All exploration commands use the test driver client CLI:
+Run `pnpm test-driver --help` for all available commands. All exploration commands require `--session <id>`:
 
 ```bash
-pnpm test-driver <action> [selector] [value]
+pnpm test-driver snapshot --session <id>
+pnpm test-driver click "button" --session <id>
+pnpm test-driver fill "textarea" "hello" --session <id>
 ```
-
-Available commands:
-
-| Command | Description | Example |
-|---------|-------------|---------|
-| `snapshot` | Get a text DOM of visible elements | `pnpm test-driver snapshot` |
-| `getText <selector>` | Get inner text of an element | `pnpm test-driver getText "h1"` |
-| `count <selector>` | Count matching elements | `pnpm test-driver count "button"` |
-| `click <selector>` | Click an element | `pnpm test-driver click "button"` |
-| `fill <selector> <value>` | Fill an input/textarea | `pnpm test-driver fill "textarea" "hello"` |
-| `keypress <selector> <key>` | Dispatch a keyboard event | `pnpm test-driver keypress "textarea" Enter` |
-| `waitForText <text>` | Wait for text to appear in body (30s default) | `pnpm test-driver waitForText "Success"` |
-| `scroll <direction>` | Scroll the page (up/down/top/bottom) | `pnpm test-driver scroll down` |
-| `screenshot [path]` | Take a screenshot | `pnpm test-driver screenshot test.png` |
 
 ### Snapshot Format
 
@@ -65,36 +59,33 @@ The `snapshot` command returns a simplified text DOM:
 
 ### Phase 1: Explore
 
-1. Navigate to home first, then `snapshot` to see the current page state.
+1. Start a session if one isn't running:
    ```bash
-   pnpm test-driver click '[data-testid="nav-home"]'
-   pnpm test-driver snapshot
+   pnpm test-driver start --session <id>
+   ```
+
+2. Navigate to home, then `snapshot` to see the current page state.
+   ```bash
+   pnpm test-driver click '[data-testid="nav-home"]' --session <id>
+   pnpm test-driver snapshot --session <id>
    ```
    Tests always start from the home screen (`useTestDriver()` navigates home in `beforeEach`), so exploration should too.
 
-2. For each element you need to interact with or verify:
+3. For each element you need to interact with or verify:
    - Identify it from the snapshot (e.g., `[e3] button "Send"`)
    - Pick a stable selector using the **Element Locating Strategy** below — never use `data-tid`
    - Use `count` with that stable selector to verify it matches exactly one element
    - Use `getText` to verify text content
    - Use `click`/`fill` to perform actions during exploration
 
-3. After each action, run `snapshot` again — the DOM may have changed.
+4. After each action, run `snapshot` again — the DOM may have changed.
 
-Example exploration session:
-```bash
-# 1. See what's on the page
-pnpm test-driver snapshot
+5. When done exploring, stop the session:
+   ```bash
+   pnpm test-driver stop --session <id>
+   ```
 
-# 2. Pick a selector for the element you need, verify it matches exactly 1
-pnpm test-driver count 'textarea[placeholder="Ask anything..."]'
-
-# 3. Interact
-pnpm test-driver fill 'textarea[placeholder="Ask anything..."]' "hello world"
-
-# 4. Snapshot again to see the result
-pnpm test-driver snapshot
-```
+6. If the app is in a dirty state during exploration, stop and restart to get a fresh environment.
 
 ### Phase 2: Write the Test
 
@@ -132,13 +123,23 @@ All `timeout` options default to 5 seconds. `waitForText` defaults to 30 seconds
 
 ### Phase 3: Verify the Test
 
-Run the test to make sure it passes:
+Run the test:
 
 ```bash
-pnpm test:app-e2e
+pnpm test:app-e2e <test-file-name>  # for example, chat.test.ts
 ```
 
-If it fails, use the test driver CLI to re-explore. The issue could be a wrong selector, an incorrect assertion, or a bug in the app implementation.
+If it fails, re-explore with the test driver CLI to diagnose.
+
+### Phase 4: Refactor
+
+Once the test pass, refactor:
+
+- Extract repeated selectors into constants at the top of the test file
+- Extract repeated steps into helper functions — within the test file if local, or in `tests/app-e2e/lib/fixtures.ts` if shared across test files
+- Check if an existing fixture already covers the step before creating a new one
+
+Run the test again to confirm.
 
 ## Element Locating Strategy
 
@@ -171,3 +172,5 @@ For each element, find a stable selector using this priority:
 - Use `waitForText` to wait for specific text content to appear (e.g., after submitting a form or waiting for an LLM response)
 - If the DOM updates after an action, run `snapshot` again to see the new state before writing assertions
 - Do not add comments in test files — the test descriptions and code should be self-explanatory
+- After each exploration step, note the selectors and commands used. Write the test from your notes after exploring the full flow.
+- If a UI action (click, fill, etc.) doesn't work as expected or doesn't exist, check `src-tauri/plugins/app-test-driver/src/lib.rs` — the action may need to be extended or a new command added for that UI pattern. After modifying the plugin, restart the session to pick up the changes.

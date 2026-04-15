@@ -3,7 +3,8 @@ import { defineConfig } from "vitest/config";
 export default defineConfig({
   define: {
     __SCREENSHOT_DIR__: JSON.stringify(
-      process.env.SCREENSHOT_DIR || "tests/app-e2e/screenshots",
+      process.env.SCREENSHOT_DIR ||
+        new URL("tests/app-e2e/screenshots", import.meta.url).pathname,
     ),
     __SCREENSHOT_ON_FAILURE__: process.env.SCREENSHOT_ON_FAILURE !== "false",
   },

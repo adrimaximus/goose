@@ -118,6 +118,7 @@ export function CreateSkillDialog({
               {t("dialog.name")} <span className="text-destructive">*</span>
             </Label>
             <Input
+              data-testid="skill-form-name"
               value={name}
               onChange={(e) => handleNameChange(e.target.value)}
               placeholder={t("dialog.namePlaceholder")}
@@ -138,6 +139,7 @@ export function CreateSkillDialog({
               <span className="text-destructive">*</span>
             </Label>
             <Input
+              data-testid="skill-form-description"
               value={description}
               onChange={(e) => {
                 setDescription(e.target.value);
@@ -153,6 +155,7 @@ export function CreateSkillDialog({
               {t("dialog.instructions")}
             </Label>
             <Textarea
+              data-testid="skill-form-instructions"
               value={instructions}
               onChange={(e) => setInstructions(e.target.value)}
               rows={10}
@@ -170,12 +173,13 @@ export function CreateSkillDialog({
             type="button"
             variant="ghost"
             size="sm"
+            data-testid="skill-form-cancel"
             onClick={handleClose}
             disabled={saving}
           >
             {t("common:actions.cancel")}
           </Button>
-          <Button type="submit" form="skill-form" size="sm" disabled={!canSave}>
+          <Button data-testid="skill-form-submit" type="submit" form="skill-form" size="sm" disabled={!canSave}>
             {saving
               ? isEditing
                 ? t("dialog.saving")
