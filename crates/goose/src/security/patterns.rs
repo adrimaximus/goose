@@ -46,10 +46,13 @@ impl RiskLevel {
 
 /// Comprehensive list of dangerous command patterns
 pub const THREAT_PATTERNS: &[ThreatPattern] = &[
-    // Critical filesystem destruction patterns
-    // NOTE: rm_rf_root removed — it matched ANY `rm -rf /path` including
-    // `rm -rf /tmp/project-clone` which is a normal dev workflow.
-    // rm_rf_system (below) covers the dangerous system directories.
+    ThreatPattern {
+        name: "rm_rf_root_bare",
+        pattern: r"rm\s+(-[rRfF]*[rRfF][rRfF]*|--recursive\s+--force|--force\s+--recursive)\s+/(\s|$)",
+        description: "Recursive deletion of root filesystem",
+        risk_level: RiskLevel::Critical,
+        category: ThreatCategory::FileSystemDestruction,
+    },
     ThreatPattern {
         name: "rm_rf_system",
         pattern: r"rm\s+(-[rf]*[rf][rf]*|--recursive|--force).*/(bin|etc|usr|var|sys|proc|dev|boot|lib|opt|srv)\b",
