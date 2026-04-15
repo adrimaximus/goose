@@ -330,7 +330,7 @@ export function SidebarProjectsSection({
       >
         <span
           className={cn(
-            "text-xs font-light uppercase tracking-wider text-muted-foreground flex-1 pl-3",
+            "text-xs font-medium tracking-normal text-muted-foreground/60 flex-1 pl-3",
             labelTransition,
             labelVisible
               ? "opacity-100 w-auto"
@@ -411,8 +411,8 @@ export function SidebarProjectsSection({
       >
         <div
           className={cn(
-            "my-2 -mx-1.5 bg-border transition-all duration-300",
-            collapsed ? "w-5 mx-auto h-px" : "h-px",
+            "my-3 transition-all duration-300",
+            collapsed ? "my-2" : "",
           )}
         />
         <div
@@ -423,7 +423,7 @@ export function SidebarProjectsSection({
         >
           <span
             className={cn(
-              "text-xs font-light uppercase tracking-wider text-muted-foreground flex-1 pl-3",
+              "text-xs font-medium tracking-normal text-muted-foreground/60 flex-1 pl-3",
               labelTransition,
               labelVisible
                 ? "opacity-100 w-auto"

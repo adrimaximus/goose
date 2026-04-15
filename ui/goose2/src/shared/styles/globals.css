@@ -116,6 +116,7 @@
   --text-default: var(--color-gray-900);
   --text-subtle: var(--color-gray-600);
   --text-muted: var(--color-gray-500);
+  --text-placeholder: var(--color-gray-400);
   --text-alt: var(--color-gray-600);
   --text-inverse: var(--color-white);
   --text-danger: var(--color-red-200);
@@ -298,6 +299,7 @@
   --text-default: var(--color-white);
   --text-subtle: var(--color-gray-400);
   --text-muted: var(--color-gray-500);
+  --text-placeholder: var(--color-gray-600);
   --text-alt: var(--color-gray-500);
   --text-inverse: var(--color-black);
   --text-danger: var(--color-red-100);
@@ -401,6 +403,7 @@
   --color-text-default: var(--text-default);
   --color-text-subtle: var(--text-subtle);
   --color-text-muted: var(--text-muted);
+  --color-text-placeholder: var(--text-placeholder);
   --color-text-alt: var(--text-alt);
   --color-text-inverse: var(--text-inverse);
   --color-text-danger: var(--text-danger);
