@@ -199,7 +199,6 @@ export default function ChatInput({
 }: ChatInputProps) {
   const [_value, setValue] = useState(initialValue);
   const [displayValue, setDisplayValue] = useState(initialValue); // For immediate visual feedback
-  const [isFocused, setIsFocused] = useState(false);
   const [pastedImages, setPastedImages] = useState<PastedImage[]>([]);
   const [isFilePickerOpen, setIsFilePickerOpen] = useState(false);
 
@@ -1277,11 +1276,7 @@ export default function ChatInput({
     <div
       className={`flex flex-col relative h-auto p-4 transition-colors ${
         disableAnimation ? '' : 'page-transition'
-      } ${
-        isFocused
-          ? 'border-border-secondary hover:border-border-secondary'
-          : 'border-border-primary hover:border-border-primary'
-      } bg-background-primary z-10 rounded-t-2xl`}
+      } rounded-2xl border border-border-primary bg-background-primary`}
       data-drop-zone="true"
       onDrop={handleLocalDrop}
       onDragOver={handleLocalDragOver}
@@ -1322,8 +1317,6 @@ export default function ChatInput({
             onCompositionEnd={handleCompositionEnd}
             onKeyDown={handleKeyDown}
             onPaste={handlePaste}
-            onFocus={() => setIsFocused(true)}
-            onBlur={() => setIsFocused(false)}
             ref={textAreaRef}
             rows={1}
             readOnly={isRecording}
@@ -1331,13 +1324,13 @@ export default function ChatInput({
               minHeight: `${minTextareaHeight}px`,
               maxHeight: `${maxHeight}px`,
               overflowY: 'auto',
-              paddingRight: dictationProvider ? '180px' : '120px',
+
             }}
             className="w-full outline-none border-none focus:ring-0 bg-transparent px-3 pt-3 pb-1.5 text-sm resize-none text-text-primary placeholder:text-text-secondary"
           />
 
           {/* Inline action buttons - absolutely positioned on the right */}
-          <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
+          <div className="absolute right-3 bottom-3 flex items-center gap-1">
             {/* Microphone button - show only if provider is selected */}
             {dictationProvider && (
               <>
@@ -1352,7 +1345,7 @@ export default function ChatInput({
                           variant="outline"
                           onClick={() => {}}
                           disabled={true}
-                          className="bg-slate-600 text-white cursor-not-allowed opacity-50 border-slate-600 rounded-full px-6 py-2"
+                          className="rounded-full size-8 !p-0 flex items-center justify-center bg-foreground/10 text-text-secondary cursor-default border-none shadow-none"
                         >
                           <Microphone />
                         </Button>
@@ -1427,9 +1420,9 @@ export default function ChatInput({
                 size="sm"
                 shape="round"
                 variant="outline"
-                className="bg-slate-600 text-white hover:bg-slate-700 border-slate-600 rounded-full px-6 py-2"
+                className="rounded-full size-8 !p-0 flex items-center justify-center bg-destructive/10 text-danger hover:bg-destructive/20 border-none shadow-none"
               >
-                <Stop />
+                <Stop className="w-3.5 h-3.5" />
               </Button>
             ) : (
               <Tooltip>
@@ -1441,14 +1434,13 @@ export default function ChatInput({
                       shape="round"
                       variant="outline"
                       disabled={isSubmitButtonDisabled}
-                      className={`rounded-full px-10 py-2 flex items-center gap-2 ${
+                      className={`rounded-full size-8 flex items-center justify-center !p-0 ${
                         isSubmitButtonDisabled
-                          ? 'bg-slate-600 text-white cursor-not-allowed opacity-50 border-slate-600'
-                          : 'bg-slate-600 text-white hover:bg-slate-700 border-slate-600 hover:cursor-pointer'
+                          ? 'bg-foreground/10 text-text-secondary cursor-default border-none shadow-none'
+                          : 'bg-foreground text-background hover:bg-foreground/90 border-none shadow-none hover:cursor-pointer'
                       }`}
                     >
                       <Send className="w-4 h-4" />
-                      <span className="text-sm">Send</span>
                     </Button>
                   </span>
                 </TooltipTrigger>
@@ -1582,7 +1574,7 @@ export default function ChatInput({
       )}
 
       {/* Secondary actions and controls row below input */}
-      <div className="flex flex-row items-center gap-1 p-2 relative">
+      <div className="flex flex-row items-center gap-1 px-1 py-1.5 relative">
         <DirSwitcher
           className="mr-0"
           sessionId={sessionId ?? undefined}
@@ -1596,7 +1588,7 @@ export default function ChatInput({
           onRestartStart={() => setChatState?.(ChatState.RestartingAgent)}
           onRestartEnd={() => setChatState?.(ChatState.Idle)}
         />
-        <div className="w-px h-4 bg-border-primary mx-2" />
+        <div className="w-px h-3 bg-border-primary mx-1" />
         <Tooltip>
           <TooltipTrigger asChild>
             <Button
@@ -1612,7 +1604,7 @@ export default function ChatInput({
           </TooltipTrigger>
           <TooltipContent>Attach file</TooltipContent>
         </Tooltip>
-        <div className="w-px h-4 bg-border-primary mx-2" />
+        <div className="w-px h-3 bg-border-primary mx-1" />
         {/* Model selector, mode selector, alerts, summarize button */}
         <div className="flex flex-row items-center">
           {/* Cost Tracker */}
@@ -1647,13 +1639,13 @@ export default function ChatInput({
               />
             </div>
           </Tooltip>
-          <div className="w-px h-4 bg-border-primary mx-2" />
+          <div className="w-px h-3 bg-border-primary mx-1" />
           <BottomMenuModeSelection sessionId={sessionId} />
-          <div className="w-px h-4 bg-border-primary mx-2" />
+          <div className="w-px h-3 bg-border-primary mx-1" />
           <BottomMenuExtensionSelection sessionId={sessionId} />
           {sessionId && messages.length > 0 && (
             <>
-              <div className="w-px h-4 bg-border-primary mx-2" />
+              <div className="w-px h-3 bg-border-primary mx-1" />
               <div className="flex items-center h-full">
                 <Tooltip>
                   <TooltipTrigger asChild>

@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { GripVertical } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Z_INDEX } from './constants';
 import { cn } from '../../utils';
@@ -113,9 +112,9 @@ export const ExpandedRenderer: React.FC<NavigationRendererProps> = ({
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      transition={{ duration: 0.15 }}
+      transition={{ duration: 0.2 }}
       className={cn(
-        'bg-app h-full overflow-hidden outline-none',
+        'bg-app h-full overflow-hidden outline-none rounded-xl border border-border-primary',
         isOverlayMode && 'backdrop-blur-xl shadow-lg rounded-xl p-4',
         !isOverlayMode && navigationPosition === 'top' && 'pb-[2px]',
         !isOverlayMode && navigationPosition === 'bottom' && 'pt-[2px]',
@@ -163,7 +162,7 @@ export const ExpandedRenderer: React.FC<NavigationRendererProps> = ({
                     onDragEnd={drag.onDragEnd}
                     initial={{ opacity: 0 }}
                     animate={{ opacity: tilesReady ? (isDragging ? 0.5 : 1) : 0 }}
-                    transition={{ duration: 0.15, delay: tilesReady ? index * 0.03 : 0 }}
+                    transition={{ duration: 0.2, delay: tilesReady ? index * 0.03 : 0 }}
                     className={cn(
                       'relative cursor-move group',
                       isDragOver && 'ring-2 ring-blue-500 rounded-lg'
@@ -174,22 +173,19 @@ export const ExpandedRenderer: React.FC<NavigationRendererProps> = ({
                         <motion.div
                           className={cn(
                             'w-full relative flex flex-col rounded-xl',
-                            'transition-colors duration-150 aspect-square cursor-pointer shadow-sm hover:shadow-md',
+                            'transition-colors duration-200 aspect-square cursor-pointer shadow-sm hover:shadow-md',
                             active
-                              ? 'bg-background-inverse text-text-inverse'
-                              : 'bg-background-primary hover:bg-background-tertiary'
+                              ? 'font-medium text-text-primary bg-background-primary hover:bg-background-tertiary'
+                              : 'text-text-secondary hover:text-text-primary bg-background-primary hover:bg-background-tertiary'
                           )}
                         >
                           <div className="flex-1 flex flex-col items-start justify-between p-5 no-drag text-left">
-                            <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity z-10">
-                              <GripVertical className="w-4 h-4 text-text-secondary" />
-                            </div>
                             {item.getTag && (
                               <div
                                 className={cn(
                                   'absolute top-3 px-2 py-1 rounded-full',
                                   item.tagAlign === 'left' ? 'left-8' : 'right-8',
-                                  'bg-background-secondary'
+                                  'bg-background-secondary text-text-secondary'
                                 )}
                               >
                                 <span className="text-xs font-mono text-text-secondary">
@@ -198,8 +194,8 @@ export const ExpandedRenderer: React.FC<NavigationRendererProps> = ({
                               </div>
                             )}
                             <div className="mt-auto w-full">
-                              <Icon className="w-6 h-6 mb-2" />
-                              <h2 className="font-light text-left text-xl">{item.label}</h2>
+                              <Icon className="size-5 mb-2" />
+                              <h2 className="font-light text-lg text-left">{item.label}</h2>
                             </div>
                           </div>
                         </motion.div>
@@ -231,7 +227,7 @@ export const ExpandedRenderer: React.FC<NavigationRendererProps> = ({
                 onDragEnd={drag.onDragEnd}
                 initial={{ opacity: 0 }}
                 animate={{ opacity: tilesReady ? (isDragging ? 0.5 : 1) : 0 }}
-                transition={{ duration: 0.15, delay: tilesReady ? index * 0.03 : 0 }}
+                transition={{ duration: 0.2, delay: tilesReady ? index * 0.03 : 0 }}
                 className={cn(
                   'relative cursor-move group',
                   isDragOver && 'ring-2 ring-blue-500 rounded-lg'
@@ -240,25 +236,22 @@ export const ExpandedRenderer: React.FC<NavigationRendererProps> = ({
                 <motion.div
                   className={cn(
                     'w-full relative flex flex-col rounded-xl',
-                    'transition-colors duration-150 aspect-square shadow-sm hover:shadow-md',
+                    'transition-colors duration-200 aspect-square shadow-sm hover:shadow-md',
                     active
-                      ? 'bg-background-inverse text-text-inverse'
-                      : 'bg-background-primary hover:bg-background-tertiary'
+                      ? 'font-medium text-text-primary bg-background-primary hover:bg-background-tertiary'
+                      : 'text-text-secondary hover:text-text-primary bg-background-primary hover:bg-background-tertiary'
                   )}
                 >
                   <button
                     onClick={() => onNavClick(item.path)}
                     className="flex-1 flex flex-col items-start justify-between p-5 no-drag text-left"
                   >
-                    <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity z-10">
-                      <GripVertical className="w-4 h-4 text-text-secondary" />
-                    </div>
                     {item.getTag && (
                       <div
                         className={cn(
                           'absolute top-3 px-2 py-1 rounded-full',
                           item.tagAlign === 'left' ? 'left-8' : 'right-8',
-                          'bg-background-secondary'
+                          'bg-background-secondary text-text-secondary'
                         )}
                       >
                         <span className="text-xs font-mono text-text-secondary">
@@ -267,8 +260,8 @@ export const ExpandedRenderer: React.FC<NavigationRendererProps> = ({
                       </div>
                     )}
                     <div className="mt-auto w-full">
-                      <Icon className="w-6 h-6 mb-2" />
-                      <h2 className="font-light text-left text-xl">{item.label}</h2>
+                      <Icon className="size-5 mb-2" />
+                      <h2 className="font-light text-lg text-left">{item.label}</h2>
                     </div>
                   </button>
                 </motion.div>

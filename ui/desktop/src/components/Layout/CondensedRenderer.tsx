@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { GripVertical, ChevronDown, ChevronRight, Plus } from 'lucide-react';
+import { ChevronDown, ChevronRight, Plus } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { defineMessages, useIntl } from '../../i18n';
 import { cn } from '../../utils';
@@ -50,8 +50,8 @@ export const CondensedRenderer: React.FC<NavigationRendererProps> = ({
       exit={{ opacity: 0 }}
       transition={{ duration: 0.15 }}
       className={cn(
-        'bg-app outline-none',
-        isOverlayMode && 'rounded-xl backdrop-blur-md shadow-lg p-2',
+        'bg-app outline-none rounded-xl border border-border-primary',
+        isOverlayMode && 'backdrop-blur-md shadow-lg p-2',
         isVertical ? 'flex flex-col gap-[2px] h-full' : 'flex flex-row items-stretch gap-[2px]',
         !isOverlayMode && navigationPosition === 'left' && !isCondensedIconOnly && 'pr-[2px]',
         !isOverlayMode && navigationPosition === 'right' && !isCondensedIconOnly && 'pl-[2px]',
@@ -65,7 +65,7 @@ export const CondensedRenderer: React.FC<NavigationRendererProps> = ({
       {isVertical && (
         <div
           className={cn(
-            'bg-background-primary rounded-xl flex-shrink-0',
+            'bg-background-primary rounded-lg flex-shrink-0',
             isCondensedIconOnly ? 'h-[80px] w-[40px]' : 'h-[48px] w-full'
           )}
         />
@@ -73,7 +73,7 @@ export const CondensedRenderer: React.FC<NavigationRendererProps> = ({
 
       {/* Left spacer (horizontal top position only) */}
       {!isVertical && isTopPosition && (
-        <div className="bg-background-primary rounded-xl self-stretch w-[160px] flex-shrink-0" />
+        <div className="bg-background-primary rounded-lg self-stretch w-[160px] flex-shrink-0" />
       )}
 
       {/* Navigation items */}
@@ -100,7 +100,7 @@ export const CondensedRenderer: React.FC<NavigationRendererProps> = ({
                 className={cn(
                   'relative cursor-move group',
                   isCondensedIconOnly ? 'flex-shrink-0' : 'w-full flex-shrink-0',
-                  isDragOver && 'ring-2 ring-blue-500 rounded-xl',
+                  isDragOver && 'ring-2 ring-blue-500 rounded-lg',
                   isChatItem && !isCondensedIconOnly && 'overflow-visible'
                 )}
               >
@@ -118,14 +118,14 @@ export const CondensedRenderer: React.FC<NavigationRendererProps> = ({
                         <button
                           className={cn(
                             'flex items-center justify-center',
-                            'rounded-xl transition-colors duration-150 no-drag',
+                            'rounded-lg transition-colors duration-200 no-drag',
                             'p-2.5',
                             active
-                              ? 'bg-background-inverse text-text-inverse'
-                              : 'bg-background-primary hover:bg-background-tertiary'
+                              ? 'font-medium text-text-primary'
+                              : 'text-text-secondary hover:text-text-primary'
                           )}
                         >
-                          <Icon className="w-5 h-5" />
+                          <Icon className="size-4" />
                         </button>
                       </DropdownMenuTrigger>
                       <ChatSessionsDropdown
@@ -149,18 +149,15 @@ export const CondensedRenderer: React.FC<NavigationRendererProps> = ({
                             whileTap={{ scale: 0.98 }}
                             className={cn(
                               'flex flex-row items-center gap-2 outline-none',
-                              'relative rounded-xl transition-colors duration-150 no-drag',
-                              'w-full pl-2 pr-4 py-2.5',
+                              'relative rounded-lg transition-colors duration-200 no-drag',
+                              'w-full p-3',
                               active
-                                ? 'bg-background-inverse text-text-inverse'
-                                : 'bg-background-primary hover:bg-background-tertiary'
+                                ? 'font-medium text-text-primary'
+                                : 'text-text-secondary hover:text-text-primary'
                             )}
                           >
-                            <div className="opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
-                              <GripVertical className="w-4 h-4 text-text-secondary" />
-                            </div>
-                            <Icon className="w-5 h-5 flex-shrink-0" />
-                            <span className="text-sm font-medium text-left flex-1">
+                            <Icon className="size-4 flex-shrink-0" />
+                            <span className="text-[13px] font-light text-left flex-1">
                               {item.label}
                             </span>
                             <div className="flex-shrink-0">
@@ -198,23 +195,18 @@ export const CondensedRenderer: React.FC<NavigationRendererProps> = ({
                           whileTap={{ scale: 0.98 }}
                           className={cn(
                             'flex flex-row items-center gap-2',
-                            'relative rounded-xl transition-colors duration-150 no-drag',
+                            'relative rounded-lg transition-colors duration-200 no-drag',
                             isCondensedIconOnly
                               ? 'justify-center p-2.5'
-                              : 'w-full pl-2 pr-4 py-2.5',
+                              : 'w-full p-3',
                             active
-                              ? 'bg-background-inverse text-text-inverse'
-                              : 'bg-background-primary hover:bg-background-tertiary'
+                              ? 'font-medium text-text-primary'
+                              : 'text-text-secondary hover:text-text-primary'
                           )}
                         >
+                          <Icon className="size-4 flex-shrink-0" />
                           {!isCondensedIconOnly && (
-                            <div className="opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
-                              <GripVertical className="w-4 h-4 text-text-secondary" />
-                            </div>
-                          )}
-                          <Icon className="w-5 h-5 flex-shrink-0" />
-                          {!isCondensedIconOnly && (
-                            <span className="text-sm font-medium text-left flex-1">
+                            <span className="text-[13px] font-light text-left flex-1">
                               {item.label}
                             </span>
                           )}
@@ -223,9 +215,7 @@ export const CondensedRenderer: React.FC<NavigationRendererProps> = ({
                               <span
                                 className={cn(
                                   'text-xs font-mono px-2 py-0.5 rounded-full',
-                                  active
-                                    ? 'bg-background-primary/20 text-text-inverse/80'
-                                    : 'bg-background-secondary text-text-secondary'
+                                  'bg-background-secondary text-text-secondary'
                                 )}
                               >
                                 {item.getTag()}
@@ -256,7 +246,7 @@ export const CondensedRenderer: React.FC<NavigationRendererProps> = ({
 
           <div
             className={cn(
-              'bg-background-primary rounded-xl flex-1 min-h-[40px]',
+              'bg-background-primary rounded-lg flex-1 min-h-[40px]',
               isCondensedIconOnly ? 'w-[40px]' : 'w-full'
             )}
           />
@@ -283,7 +273,7 @@ export const CondensedRenderer: React.FC<NavigationRendererProps> = ({
               transition={{ duration: 0.15, delay: index * 0.02 }}
               className={cn(
                 'relative cursor-move group flex-shrink-0',
-                isDragOver && 'ring-2 ring-blue-500 rounded-xl',
+                isDragOver && 'ring-2 ring-blue-500 rounded-lg',
                 isChatItem && !isCondensedIconOnly && 'overflow-visible'
               )}
             >
@@ -296,15 +286,15 @@ export const CondensedRenderer: React.FC<NavigationRendererProps> = ({
                         whileTap={{ scale: 0.98 }}
                         className={cn(
                           'flex flex-row items-center justify-center gap-2',
-                          'relative rounded-xl transition-colors duration-150 no-drag',
+                          'relative rounded-lg transition-colors duration-200 no-drag',
                           'px-3 py-2.5',
                           active
-                            ? 'bg-background-inverse text-text-inverse'
-                            : 'bg-background-primary hover:bg-background-tertiary'
+                            ? 'font-medium text-text-primary'
+                            : 'text-text-secondary hover:text-text-primary'
                         )}
                       >
-                        <Icon className="w-5 h-5 flex-shrink-0" />
-                        <span className="text-sm font-medium text-left hidden min-[1200px]:block">
+                        <Icon className="size-4 flex-shrink-0" />
+                        <span className="text-[13px] font-light text-left hidden min-[1200px]:block">
                           {item.label}
                         </span>
                       </motion.button>
@@ -327,14 +317,14 @@ export const CondensedRenderer: React.FC<NavigationRendererProps> = ({
                     whileTap={{ scale: 0.98 }}
                     className={cn(
                       'flex flex-row items-center gap-2 px-3 py-2.5',
-                      'relative rounded-xl transition-colors duration-150 no-drag',
+                      'relative rounded-lg transition-colors duration-200 no-drag',
                       active
-                        ? 'bg-background-inverse text-text-inverse'
-                        : 'bg-background-primary hover:bg-background-tertiary'
+                        ? 'font-medium text-text-primary'
+                        : 'text-text-secondary hover:text-text-primary'
                     )}
                   >
-                    <Icon className="w-5 h-5 flex-shrink-0" />
-                    <span className="text-sm font-medium text-left hidden min-[1200px]:block">
+                    <Icon className="size-4 flex-shrink-0" />
+                    <span className="text-[13px] font-light text-left hidden min-[1200px]:block">
                       {item.label}
                     </span>
                   </motion.button>
@@ -348,7 +338,7 @@ export const CondensedRenderer: React.FC<NavigationRendererProps> = ({
       {/* Right spacer (horizontal only) */}
       {!isVertical && (
         <div
-          className="bg-background-primary rounded-xl self-stretch flex-1 min-w-[40px]"
+          className="bg-background-primary rounded-lg self-stretch flex-1 min-w-[40px]"
           style={
             !isOverlayMode && isTopPosition
               ? ({ WebkitAppRegion: 'drag' } as React.CSSProperties)
