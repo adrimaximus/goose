@@ -329,59 +329,62 @@ async fn do_compact(
         .map(|msg| msg.agent_visible_content())
         .collect();
 
-    // Proactive tool result pruning (only when adaptive memory is active):
-    // Replace old tool results >200 chars with stubs BEFORE sending to the LLM
-    // summarizer. This is free (no API cost) and dramatically reduces what the
-    // summarizer has to process. Protects the most recent 20 messages.
-    let pruned_messages: Vec<Message> = if prune_tool_results {
-        let protect_tail = 20.min(agent_visible_messages.len());
-        let prune_boundary = agent_visible_messages.len().saturating_sub(protect_tail);
-        agent_visible_messages
-            .iter()
-            .enumerate()
-            .map(|(i, msg)| {
-                if i < prune_boundary {
-                    let mut pruned = msg.clone();
-                    pruned.content = pruned
-                        .content
-                        .into_iter()
-                        .map(|c| {
-                            if let MessageContent::ToolResponse(ref tr) = c {
-                                if let Ok(ref result) = tr.tool_result {
-                                    let text_len: usize = result
-                                        .content
-                                        .iter()
-                                        .filter_map(|rc| rc.as_text().map(|t| t.text.len()))
-                                        .sum();
-                                    if text_len > 200 {
-                                        return MessageContent::text(
-                                            "[Old tool output cleared to save context space]",
-                                        );
-                                    }
-                                }
-                            }
-                            c
-                        })
-                        .collect();
-                    pruned
-                } else {
-                    msg.clone()
-                }
-            })
-            .collect()
-    } else {
-        agent_visible_messages.to_vec()
-    };
-
-    // Try progressively removing more tool response messages from the middle to reduce context length
+    // Try progressively removing more tool response messages from the middle to reduce context length.
+    // Filtering happens on the original messages (which still have ToolResponse variants)
+    // so that filter_tool_responses can identify and remove them. Pruning (replacing long
+    // tool outputs with short stubs) is applied afterward to shrink what survives filtering.
     let removal_percentages = [0, 10, 20, 50, 100];
 
     for (attempt, &remove_percent) in removal_percentages.iter().enumerate() {
-        let filtered_messages = filter_tool_responses(&pruned_messages, remove_percent);
+        let filtered_messages = filter_tool_responses(&agent_visible_messages, remove_percent);
 
-        let messages_text = filtered_messages
+        // Proactive tool result pruning (only when adaptive memory is active):
+        // Replace old tool results >200 chars with stubs. This is free (no API cost)
+        // and dramatically reduces what the summarizer has to process.
+        // Protects the most recent 20 messages.
+        let pruned_messages: Vec<Message> = if prune_tool_results {
+            let protect_tail = 20.min(filtered_messages.len());
+            let prune_boundary = filtered_messages.len().saturating_sub(protect_tail);
+            filtered_messages
+                .iter()
+                .enumerate()
+                .map(|(i, msg)| {
+                    if i < prune_boundary {
+                        let mut pruned = (*msg).clone();
+                        pruned.content = pruned
+                            .content
+                            .into_iter()
+                            .map(|c| {
+                                if let MessageContent::ToolResponse(ref tr) = c {
+                                    if let Ok(ref result) = tr.tool_result {
+                                        let text_len: usize = result
+                                            .content
+                                            .iter()
+                                            .filter_map(|rc| rc.as_text().map(|t| t.text.len()))
+                                            .sum();
+                                        if text_len > 200 {
+                                            return MessageContent::text(
+                                                "[Old tool output cleared to save context space]",
+                                            );
+                                        }
+                                    }
+                                }
+                                c
+                            })
+                            .collect();
+                        pruned
+                    } else {
+                        (*msg).clone()
+                    }
+                })
+                .collect()
+        } else {
+            filtered_messages.into_iter().cloned().collect()
+        };
+
+        let messages_text = pruned_messages
             .iter()
-            .map(|&msg| format_message_for_compacting(msg))
+            .map(format_message_for_compacting)
             .collect::<Vec<_>>()
             .join("\n");
 
