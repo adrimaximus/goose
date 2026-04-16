@@ -1129,7 +1129,7 @@ const openDirectoryDialog = async (): Promise<OpenDialogReturnValue> => {
   let defaultPath: string | undefined;
   const currentWindow = BrowserWindow.getFocusedWindow();
 
-  if (currentWindow) {
+  if (currentWindow && !currentWindow.isDestroyed()) {
     try {
       const currentWorkingDir = await currentWindow.webContents.executeJavaScript(
         `window.appConfig ? window.appConfig.get('GOOSE_WORKING_DIR') : null`
@@ -1911,7 +1911,7 @@ async function appMain() {
           accelerator: shortcuts.settings,
           click() {
             const focusedWindow = BrowserWindow.getFocusedWindow();
-            if (focusedWindow) focusedWindow.webContents.send('set-view', 'settings');
+            if (focusedWindow && !focusedWindow.isDestroyed()) focusedWindow.webContents.send('set-view', 'settings');
           },
         })
       );
@@ -1929,7 +1929,7 @@ async function appMain() {
         accelerator: shortcuts.find || undefined,
         click() {
           const focusedWindow = BrowserWindow.getFocusedWindow();
-          if (focusedWindow) focusedWindow.webContents.send('find-command');
+          if (focusedWindow && !focusedWindow.isDestroyed()) focusedWindow.webContents.send('find-command');
         },
       },
       {
@@ -1937,7 +1937,7 @@ async function appMain() {
         accelerator: shortcuts.findNext || undefined,
         click() {
           const focusedWindow = BrowserWindow.getFocusedWindow();
-          if (focusedWindow) focusedWindow.webContents.send('find-next');
+          if (focusedWindow && !focusedWindow.isDestroyed()) focusedWindow.webContents.send('find-next');
         },
       },
       {
@@ -1945,7 +1945,7 @@ async function appMain() {
         accelerator: shortcuts.findPrevious || undefined,
         click() {
           const focusedWindow = BrowserWindow.getFocusedWindow();
-          if (focusedWindow) focusedWindow.webContents.send('find-previous');
+          if (focusedWindow && !focusedWindow.isDestroyed()) focusedWindow.webContents.send('find-previous');
         },
       },
       {
@@ -1953,7 +1953,7 @@ async function appMain() {
         accelerator: process.platform === 'darwin' ? 'Command+E' : undefined,
         click() {
           const focusedWindow = BrowserWindow.getFocusedWindow();
-          if (focusedWindow) focusedWindow.webContents.send('use-selection-find');
+          if (focusedWindow && !focusedWindow.isDestroyed()) focusedWindow.webContents.send('use-selection-find');
         },
         visible: process.platform === 'darwin', // Only show on Mac
       },
@@ -1982,7 +1982,7 @@ async function appMain() {
           accelerator: shortcuts.newChat,
           click() {
             const focusedWindow = BrowserWindow.getFocusedWindow();
-            if (focusedWindow) focusedWindow.webContents.send('new-chat');
+            if (focusedWindow && !focusedWindow.isDestroyed()) focusedWindow.webContents.send('new-chat');
           },
         })
       );
@@ -2076,7 +2076,7 @@ async function appMain() {
             accelerator: shortcuts.alwaysOnTop,
             click(menuItem) {
               const focusedWindow = BrowserWindow.getFocusedWindow();
-              if (focusedWindow) {
+              if (focusedWindow && !focusedWindow.isDestroyed()) {
                 const isAlwaysOnTop = menuItem.checked;
 
                 if (process.platform === 'darwin') {
@@ -2104,7 +2104,7 @@ async function appMain() {
           accelerator: shortcuts.toggleNavigation,
           click() {
             const focusedWindow = BrowserWindow.getFocusedWindow();
-            if (focusedWindow) {
+            if (focusedWindow && !focusedWindow.isDestroyed()) {
               focusedWindow.webContents.send('toggle-navigation');
             }
           },
