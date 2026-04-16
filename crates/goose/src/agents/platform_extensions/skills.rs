@@ -265,10 +265,19 @@ pub async fn handle_create_skill(arguments: Option<JsonObject>) -> Result<CallTo
         )]));
     }
 
-    if !content.starts_with("---") {
+    // Validate frontmatter: must have opening/closing delimiters and required fields
+    if parse_skill_content(content, PathBuf::new()).is_none() {
         return Ok(CallToolResult::error(vec![Content::text(
-            "Skill content must start with YAML frontmatter (---\\nname: ...\\ndescription: ...\\n---)",
+            "Invalid skill content. Must have valid YAML frontmatter with 'name' and 'description' fields:\n---\nname: my-skill\ndescription: What this skill does\n---\nInstructions here...",
         )]));
+    }
+
+    // Scan content for prompt injection / exfiltration patterns
+    if let Some(err) = super::adaptive_memory::scan_content(content) {
+        return Ok(CallToolResult::error(vec![Content::text(format!(
+            "Rejected skill content: {}",
+            err
+        ))]));
     }
 
     let skill_dir = Paths::config_dir().join("skills").join(name);
@@ -334,9 +343,9 @@ pub async fn handle_patch_skill(
         .and_then(|v| v.as_str())
         .unwrap_or("");
 
-    if name.is_empty() || old_text.is_empty() {
+    if name.is_empty() || old_text.is_empty() || new_text.is_empty() {
         return Ok(CallToolResult::error(vec![Content::text(
-            "Missing required parameters: name and old_text",
+            "Missing required parameters: name, old_text, and new_text. To delete a section, use remove instead.",
         )]));
     }
 
@@ -367,6 +376,15 @@ pub async fn handle_patch_skill(
     }
 
     let skill_path = skill.path.join("SKILL.md");
+
+    // Reject symlinked SKILL.md files — the directory check passed but the file
+    // itself could be a symlink pointing outside the goose-managed skills directory.
+    if skill_path.is_symlink() {
+        return Ok(CallToolResult::error(vec![Content::text(
+            "Cannot patch a symlinked SKILL.md. Create a new skill instead.",
+        )]));
+    }
+
     let old_text = old_text.to_string();
     let new_text = new_text.to_string();
     let name = name.to_string();
@@ -387,6 +405,11 @@ pub async fn handle_patch_skill(
                 "old_text matches {} locations. Use a more specific string.",
                 matches.len()
             ));
+        }
+
+        // Scan new_text for prompt injection / exfiltration patterns
+        if let Some(err) = super::adaptive_memory::scan_content(&new_text) {
+            return Err(format!("Rejected patch: {}", err));
         }
 
         let new_content = content.replacen(old_text.as_str(), &new_text, 1);

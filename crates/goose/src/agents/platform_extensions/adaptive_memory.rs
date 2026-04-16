@@ -57,7 +57,7 @@ const INVISIBLE_CHARS: &[char] = &[
     '\u{202d}', '\u{202e}',
 ];
 
-fn scan_content(content: &str) -> Option<String> {
+pub(crate) fn scan_content(content: &str) -> Option<String> {
     for &ch in INVISIBLE_CHARS {
         if content.contains(ch) {
             return Some(format!(

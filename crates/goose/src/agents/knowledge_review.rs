@@ -211,10 +211,24 @@ pub async fn flush_memories_before_compaction(
 ) -> anyhow::Result<()> {
     info!("Flushing memories before context compaction");
 
+    // Count only real user text turns, not tool-response messages (which also have Role::User).
+    // Tool-heavy sessions can have many user-role messages from tool responses alone.
     let user_msg_count = conversation
         .messages()
         .iter()
-        .filter(|m| matches!(m.role, rmcp::model::Role::User) && m.is_agent_visible())
+        .filter(|m| {
+            matches!(m.role, rmcp::model::Role::User)
+                && m.is_agent_visible()
+                && m.content
+                    .iter()
+                    .any(|c| matches!(c, crate::conversation::message::MessageContent::Text(_)))
+                && !m.content.iter().any(|c| {
+                    matches!(
+                        c,
+                        crate::conversation::message::MessageContent::ToolResponse(_)
+                    )
+                })
+        })
         .count();
 
     if user_msg_count < 3 {
