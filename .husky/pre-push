@@ -1,0 +1,79 @@
+# Run goose2 pre-push checks if any commits being pushed include goose2 changes.
+# Compares the local ref against the remote ref to detect changes in ui/goose2/.
+
+z40="0000000000000000000000000000000000000000"
+
+while read local_ref local_oid remote_ref remote_oid; do
+  if [ "$local_oid" = "$z40" ]; then
+    # Deleting a ref, skip
+    continue
+  fi
+
+  if [ "$remote_oid" = "$z40" ]; then
+    # New branch — compare against the merge base with the default branch
+    range="$(git merge-base HEAD main 2>/dev/null || echo "$local_oid")...$local_oid"
+  else
+    range="$remote_oid...$local_oid"
+  fi
+
+  if git diff --name-only "$range" -- 2>/dev/null | grep -q '^ui/goose2/'; then
+    echo "Detected ui/goose2/ changes — running pre-push checks..."
+    cd ui/goose2
+
+    # Track background job PIDs and failures
+    pids=()
+    failures=()
+
+    # Group 1: Format verification (Biome + Cargo fmt)
+    (
+      npx biome format . 2>&1 && \
+      cd src-tauri && cargo fmt --check 2>&1
+    ) &
+    pids+=($!)
+
+    # Group 2: Rust linting
+    (
+      cd src-tauri && cargo clippy -- -D warnings 2>&1
+    ) &
+    pids+=($!)
+
+    # Group 3: Biome check + file sizes + i18n strings
+    (
+      pnpm check 2>&1
+    ) &
+    pids+=($!)
+
+    # Group 4: Vitest
+    (
+      pnpm test 2>&1
+    ) &
+    pids+=($!)
+
+    # Group 5: TypeScript typecheck + Vite build
+    (
+      pnpm build 2>&1
+    ) &
+    pids+=($!)
+
+    # Group 6: Rust type checking in src-tauri
+    (
+      cd src-tauri && cargo check 2>&1
+    ) &
+    pids+=($!)
+
+    # Wait for all jobs and collect failures
+    for pid in "${pids[@]}"; do
+      if ! wait "$pid"; then
+        failures+=("$pid")
+      fi
+    done
+
+    if [ ${#failures[@]} -gt 0 ]; then
+      echo "goose2 pre-push checks failed (${#failures[@]} job(s) failed)"
+      exit 1
+    fi
+
+    echo "All goose2 pre-push checks passed."
+    break  # Only need to check once if any ref has goose2 changes
+  fi
+done

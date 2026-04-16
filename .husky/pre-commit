@@ -6,3 +6,15 @@ if git diff --cached --name-only | grep -q "^ui/desktop/"; then
     echo "Warning: ui/desktop directory does not exist, skipping lint-staged"
   fi
 fi
+
+# Run goose2 checks if any staged files are under ui/goose2/
+if git diff --cached --name-only | grep -q '^ui/goose2/'; then
+  if [ -d "ui/goose2" ]; then
+    echo "Running goose2 pre-commit checks..."
+    cd ui/goose2
+    npx biome format --write . && npx biome check --fix . && git add -u
+    pnpm check
+  else
+    echo "Warning: ui/goose2 directory does not exist, skipping goose2 checks"
+  fi
+fi
