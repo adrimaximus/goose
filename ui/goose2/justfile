@@ -8,8 +8,9 @@ default:
 
 # ── Dev Environment ──────────────────────────────────────────
 
-# Install dependencies
+# Install dependencies and activate git hooks
 setup:
+    git config core.hooksPath .husky
     pnpm install
     cd src-tauri && cargo build
 
