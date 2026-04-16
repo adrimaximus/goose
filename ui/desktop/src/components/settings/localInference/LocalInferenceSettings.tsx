@@ -413,7 +413,7 @@ export const LocalInferenceSettings = () => {
               return (
                 <div
                   key={model.id}
-                  className={`border rounded-lg p-3 transition-colors ${
+                  className={`border rounded-xl p-3 transition-colors ${
                     isSelected
                       ? 'border-accent-primary bg-accent-primary/5'
                       : 'border-border-subtle bg-background-default hover:border-border-default'

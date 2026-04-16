@@ -516,7 +516,7 @@ export default function KeyboardShortcutsSection() {
         </Card>
       )}
       {Object.entries(groupedShortcuts).map(([category, configs]) => (
-        <Card key={category} className="rounded-lg">
+        <Card key={category} className="rounded-xl">
           <CardHeader className="pb-0">
             <CardTitle>{intl.formatMessage(categoryLabelMessages[category])}</CardTitle>
             <CardDescription>
@@ -581,7 +581,7 @@ export default function KeyboardShortcutsSection() {
         </Card>
       ))}
 
-      <Card className="rounded-lg">
+      <Card className="rounded-xl">
         <CardContent className="pt-4 px-4 pb-4">
           <div className="flex items-center justify-between">
             <div>

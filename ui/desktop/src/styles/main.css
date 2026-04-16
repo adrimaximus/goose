@@ -17,7 +17,7 @@
 
 /* ═══════════════════════════════════════════════════════════
    2. TAILWIND PRIMITIVES — @theme {}
-   Palette colors, breakpoints, shadow reset.
+   Pure monochromatic gray scale + semantic pairs.
    Build-time values Tailwind uses directly. NOT part of MCP spec.
    ═══════════════════════════════════════════════════════════ */
 
@@ -30,17 +30,18 @@
   --color-block-teal: #13bbaf;
   --color-block-orange: #ff4f00;
 
-  --color-neutral-50: #f4f6f7;
-  --color-neutral-100: #e3e6ea;
-  --color-neutral-200: #cbd1d6;
-  --color-neutral-300: #a7b0b9;
-  --color-neutral-400: #878787;
-  --color-neutral-500: #606c7a;
-  --color-neutral-600: #525b68;
-  --color-neutral-700: #474e57;
-  --color-neutral-800: #3f434b;
-  --color-neutral-900: #32353b;
-  --color-neutral-950: #22252a;
+  /* Pure monochromatic gray scale */
+  --color-neutral-50: #f5f5f5;
+  --color-neutral-100: #f0f0f0;
+  --color-neutral-200: #e8e8e8;
+  --color-neutral-300: #cccccc;
+  --color-neutral-400: #999999;
+  --color-neutral-500: #666666;
+  --color-neutral-600: #333333;
+  --color-neutral-700: #232323;
+  --color-neutral-800: #1a1a1a;
+  --color-neutral-900: #111111;
+  --color-neutral-950: #000000;
 
   --color-red-100: #ff6b6b;
   --color-red-200: #f94b4b;
@@ -183,12 +184,12 @@
   --text-inverse: var(--color-white);
   --text-danger: var(--color-red-200);
 
-  /* Search highlighting */
-  --highlight-color: rgba(255, 213, 0, 0.5);
-  --highlight-current: rgba(252, 213, 3, 0.6);
+  /* Selection color — brand accent */
+  --highlight-color: rgba(59, 130, 246, 0.3);
+  --highlight-current: rgba(59, 130, 246, 0.5);
 
   /* Sidebar aliases (shadcn sidebar component convention) */
-  --sidebar: var(--color-background-secondary);
+  --sidebar: var(--color-background-primary);
   --sidebar-foreground: var(--color-text-primary);
   --sidebar-primary: var(--color-background-inverse);
   --sidebar-primary-foreground: var(--color-text-inverse);
@@ -197,10 +198,8 @@
   --sidebar-border: var(--color-border-primary);
   --sidebar-ring: var(--color-border-primary);
 
-  /* Custom shadow */
-  --shadow-default:
-    0px 12px 32px 0px rgba(0, 0, 0, 0.04), 0px 8px 16px 0px rgba(0, 0, 0, 0.02),
-    0px 2px 4px 0px rgba(0, 0, 0, 0.04), 0px 0px 1px 0px rgba(0, 0, 0, 0.2);
+  /* Modern layered shadow */
+  --shadow-default: 0 2px 8px rgba(76, 76, 76, 0.15), 0 0 0 1px rgba(0, 0, 0, 0.04);
 }
 
 .dark {
@@ -208,12 +207,12 @@
   --text-inverse: var(--color-black);
   --text-danger: var(--color-red-100);
 
-  /* Search highlighting */
-  --highlight-color: rgba(255, 213, 0, 0.5);
-  --highlight-current: rgba(252, 213, 3, 0.6);
+  /* Selection color — brand accent */
+  --highlight-color: rgba(59, 130, 246, 0.3);
+  --highlight-current: rgba(59, 130, 246, 0.5);
 
   /* Sidebar aliases */
-  --sidebar: var(--color-background-secondary);
+  --sidebar: var(--color-background-primary);
   --sidebar-foreground: var(--color-text-primary);
   --sidebar-primary: var(--color-background-inverse);
   --sidebar-primary-foreground: var(--color-text-inverse);
@@ -222,10 +221,8 @@
   --sidebar-border: var(--color-border-primary);
   --sidebar-ring: var(--color-border-primary);
 
-  /* Custom shadow */
-  --shadow-default:
-    0px 12px 32px 0px rgba(0, 0, 0, 0.2), 0px 8px 16px 0px rgba(0, 0, 0, 0.15),
-    0px 2px 4px 0px rgba(0, 0, 0, 0.1), 0px 0px 1px 0px rgba(0, 0, 0, 0.3);
+  /* Modern layered shadow — doubled for dark */
+  --shadow-default: 0 2px 8px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.06);
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -242,46 +239,7 @@
   }
 }
 
-@font-face {
-  font-family: 'Cash Sans';
-  src:
-    url(https://cash-f.squarecdn.com/static/fonts/cashsans/woff2/CashSans-Light.woff2)
-      format('woff2'),
-    url(https://cash-f.squarecdn.com/static/fonts/cashsans/woff/CashSans-Light.woff) format('woff');
-  font-weight: 300;
-  font-style: normal;
-}
-
-@font-face {
-  font-family: 'Cash Sans';
-  src:
-    url(https://cash-f.squarecdn.com/static/fonts/cashsans/woff2/CashSans-Regular.woff2)
-      format('woff2'),
-    url(https://cash-f.squarecdn.com/static/fonts/cashsans/woff/CashSans-Regular.woff)
-      format('woff');
-  font-weight: 400;
-  font-style: normal;
-}
-
-@font-face {
-  font-family: 'Cash Sans';
-  src:
-    url(https://cash-f.squarecdn.com/static/fonts/cashsans/woff2/CashSans-Medium.woff2)
-      format('woff2'),
-    url(https://cash-f.squarecdn.com/static/fonts/cashsans/woff/CashSans-Medium.woff) format('woff');
-  font-weight: 500;
-  font-style: normal;
-}
-
-@font-face {
-  font-family: 'Cash Sans';
-  src:
-    url(https://cash-f.squarecdn.com/static/fonts/cashsans/woff2/CashSans-Bold.woff2)
-      format('woff2'),
-    url(https://cash-f.squarecdn.com/static/fonts/cashsans/woff/CashSans-Bold.woff) format('woff');
-  font-weight: 700;
-  font-style: normal;
-}
+/* Cash Sans kept for MCP app compatibility only */
 
 /* animations */
 @keyframes appear {
@@ -296,11 +254,46 @@
 @keyframes fade-slide-up {
   from {
     opacity: 0;
-    transform: translateY(20px);
+    transform: translateY(12px);
   }
   to {
     opacity: 1;
     transform: translateY(0);
+  }
+}
+
+@keyframes word-reveal {
+  from {
+    opacity: 0;
+    filter: blur(8px);
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    filter: blur(0);
+    transform: translateY(0);
+  }
+}
+
+@keyframes scale-in {
+  from {
+    opacity: 0;
+    transform: rotateX(-10deg) scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: rotateX(0deg) scale(1);
+  }
+}
+
+@keyframes scale-out {
+  from {
+    opacity: 1;
+    transform: rotateX(0deg) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: rotateX(-10deg) scale(0.95);
   }
 }
 
@@ -469,64 +462,62 @@
   display: block !important;
 }
 
-/* Native scrollbar styling */
+/* Native scrollbar styling — invisible until hover */
 * {
-  scrollbar-width: auto;
-  scrollbar-color: var(--color-neutral-200) transparent;
+  scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
 }
 
 .dark * {
-  scrollbar-color: var(--color-neutral-400) transparent;
+  scrollbar-color: transparent transparent;
 }
 
 /* Webkit scrollbar styles */
 ::-webkit-scrollbar {
   -webkit-appearance: none;
-  width: 12px; /* Increased from 8px */
-  height: 12px;
+  width: 6px;
+  height: 6px;
   background-color: transparent;
 }
 
 ::-webkit-scrollbar-track {
   background: transparent;
-  border-radius: 0;
+  border-radius: 999px;
 }
 
 ::-webkit-scrollbar-thumb {
-  background-color: var(--color-neutral-200);
-  border: 3px solid transparent; /* Creates padding effect */
-  border-radius: 8px;
-  background-clip: padding-box;
-  min-height: 40px; /* Minimum height of thumb */
-}
-
-.dark ::-webkit-scrollbar-thumb {
-  background-color: var(--color-neutral-400);
+  background-color: transparent;
+  border-radius: 999px;
+  min-height: 40px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background-color: var(--color-neutral-300);
-  border: 2px solid transparent; /* Slightly less padding on hover */
+  background-color: #999999;
 }
 
 .dark ::-webkit-scrollbar-thumb:hover {
-  background-color: var(--color-neutral-500);
+  background-color: #666666;
 }
 
-/* Ensure the thumb is more prominent when active */
 ::-webkit-scrollbar-thumb:active {
-  background-color: var(--color-neutral-400);
-  border: 2px solid transparent;
+  background-color: #999999;
 }
 
 .dark ::-webkit-scrollbar-thumb:active {
-  background-color: var(--color-neutral-500);
+  background-color: #666666;
 }
 
 body {
   background-color: var(--color-background-primary);
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
+  letter-spacing: -0.01em;
+}
+
+::selection {
+  background: color-mix(in srgb, #3b82f6 40%, transparent);
+  color: inherit;
 }
 
 .word-break {
@@ -550,10 +541,10 @@ body {
 }
 
 .bg-inline-code {
-  border-radius: 4px;
-  color: var(--color-neutral-200);
+  border-radius: 6px;
+  color: var(--color-neutral-400);
   font-family: monospace;
-  font-size: 12px;
+  font-size: 0.875em;
   font-style: normal;
   font-weight: 400;
   line-height: normal;

@@ -65,7 +65,7 @@ export const CondensedRenderer: React.FC<NavigationRendererProps> = ({
       {isVertical && (
         <div
           className={cn(
-            'bg-background-primary rounded-lg flex-shrink-0',
+            'bg-background-primary rounded-xl flex-shrink-0',
             isCondensedIconOnly ? 'h-[80px] w-[40px]' : 'h-[48px] w-full'
           )}
         />
@@ -73,7 +73,7 @@ export const CondensedRenderer: React.FC<NavigationRendererProps> = ({
 
       {/* Left spacer (horizontal top position only) */}
       {!isVertical && isTopPosition && (
-        <div className="bg-background-primary rounded-lg self-stretch w-[160px] flex-shrink-0" />
+        <div className="bg-background-primary rounded-xl self-stretch w-[160px] flex-shrink-0" />
       )}
 
       {/* Navigation items */}
@@ -100,7 +100,7 @@ export const CondensedRenderer: React.FC<NavigationRendererProps> = ({
                 className={cn(
                   'relative cursor-move group',
                   isCondensedIconOnly ? 'flex-shrink-0' : 'w-full flex-shrink-0',
-                  isDragOver && 'ring-2 ring-blue-500 rounded-lg',
+                  isDragOver && 'ring-2 ring-blue-500 rounded-xl',
                   isChatItem && !isCondensedIconOnly && 'overflow-visible'
                 )}
               >
@@ -118,7 +118,7 @@ export const CondensedRenderer: React.FC<NavigationRendererProps> = ({
                         <button
                           className={cn(
                             'flex items-center justify-center',
-                            'rounded-lg transition-colors duration-200 no-drag',
+                            'rounded-xl transition-colors duration-150 no-drag',
                             'p-2.5',
                             active
                               ? 'bg-background-inverse text-text-inverse'
@@ -149,7 +149,7 @@ export const CondensedRenderer: React.FC<NavigationRendererProps> = ({
                             whileTap={{ scale: 0.98 }}
                             className={cn(
                               'flex flex-row items-center gap-2 outline-none',
-                              'relative rounded-lg transition-colors duration-200 no-drag',
+                              'relative rounded-xl transition-colors duration-150 no-drag',
                               'w-full pl-2 pr-4 py-2.5',
                               active
                                 ? 'bg-background-inverse text-text-inverse'
@@ -198,7 +198,7 @@ export const CondensedRenderer: React.FC<NavigationRendererProps> = ({
                           whileTap={{ scale: 0.98 }}
                           className={cn(
                             'flex flex-row items-center gap-2',
-                            'relative rounded-lg transition-colors duration-200 no-drag',
+                            'relative rounded-xl transition-colors duration-150 no-drag',
                             isCondensedIconOnly
                               ? 'justify-center p-2.5'
                               : 'w-full pl-2 pr-4 py-2.5',
@@ -256,7 +256,7 @@ export const CondensedRenderer: React.FC<NavigationRendererProps> = ({
 
           <div
             className={cn(
-              'bg-background-primary rounded-lg flex-1 min-h-[40px]',
+              'bg-background-primary rounded-xl flex-1 min-h-[40px]',
               isCondensedIconOnly ? 'w-[40px]' : 'w-full'
             )}
           />
@@ -283,7 +283,7 @@ export const CondensedRenderer: React.FC<NavigationRendererProps> = ({
               transition={{ duration: 0.15, delay: index * 0.02 }}
               className={cn(
                 'relative cursor-move group flex-shrink-0',
-                isDragOver && 'ring-2 ring-blue-500 rounded-lg',
+                isDragOver && 'ring-2 ring-blue-500 rounded-xl',
                 isChatItem && !isCondensedIconOnly && 'overflow-visible'
               )}
             >
@@ -296,7 +296,7 @@ export const CondensedRenderer: React.FC<NavigationRendererProps> = ({
                         whileTap={{ scale: 0.98 }}
                         className={cn(
                           'flex flex-row items-center justify-center gap-2',
-                          'relative rounded-lg transition-colors duration-200 no-drag',
+                          'relative rounded-xl transition-colors duration-150 no-drag',
                           'px-3 py-2.5',
                           active
                             ? 'bg-background-inverse text-text-inverse'
@@ -327,7 +327,7 @@ export const CondensedRenderer: React.FC<NavigationRendererProps> = ({
                     whileTap={{ scale: 0.98 }}
                     className={cn(
                       'flex flex-row items-center gap-2 px-3 py-2.5',
-                      'relative rounded-lg transition-colors duration-200 no-drag',
+                      'relative rounded-xl transition-colors duration-150 no-drag',
                       active
                         ? 'bg-background-inverse text-text-inverse'
                         : 'bg-background-primary hover:bg-background-tertiary'
@@ -348,7 +348,7 @@ export const CondensedRenderer: React.FC<NavigationRendererProps> = ({
       {/* Right spacer (horizontal only) */}
       {!isVertical && (
         <div
-          className="bg-background-primary rounded-lg self-stretch flex-1 min-w-[40px]"
+          className="bg-background-primary rounded-xl self-stretch flex-1 min-w-[40px]"
           style={
             !isOverlayMode && isTopPosition
               ? ({ WebkitAppRegion: 'drag' } as React.CSSProperties)

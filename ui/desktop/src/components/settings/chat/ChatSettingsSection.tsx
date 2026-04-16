@@ -31,7 +31,7 @@ export default function ChatSettingsSection({ sessionId }: { sessionId?: string 
 
   return (
     <div className="space-y-4 pr-4 pb-8 mt-1">
-      <Card className="pb-2 rounded-lg">
+      <Card className="pb-2 rounded-xl">
         <CardHeader className="pb-0">
           <CardTitle className="">{intl.formatMessage(i18n.modeTitle)}</CardTitle>
           <CardDescription>{intl.formatMessage(i18n.modeDescription)}</CardDescription>
@@ -41,20 +41,20 @@ export default function ChatSettingsSection({ sessionId }: { sessionId?: string 
         </CardContent>
       </Card>
 
-      <Card className="pb-2 rounded-lg">
+      <Card className="pb-2 rounded-xl">
         <CardContent className="px-2">
           <GoosehintsSection />
         </CardContent>
       </Card>
 
-      <Card className="pb-2 rounded-lg">
+      <Card className="pb-2 rounded-xl">
         <CardContent className="px-2">
           <DictationSettings />
           <SpellcheckToggle />
         </CardContent>
       </Card>
 
-      <Card className="pb-2 rounded-lg">
+      <Card className="pb-2 rounded-xl">
         <CardHeader className="pb-0">
           <CardTitle className="">{intl.formatMessage(i18n.responseStylesTitle)}</CardTitle>
           <CardDescription>{intl.formatMessage(i18n.responseStylesDescription)}</CardDescription>
@@ -64,7 +64,7 @@ export default function ChatSettingsSection({ sessionId }: { sessionId?: string 
         </CardContent>
       </Card>
 
-      <Card className="pb-2 rounded-lg">
+      <Card className="pb-2 rounded-xl">
         <CardContent className="px-2">
           <SecurityToggle />
         </CardContent>

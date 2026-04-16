@@ -114,7 +114,7 @@ export default function ModelsSection({ setView }: ModelsSectionProps) {
           <ModelSettingsButtons setView={setView} />
         </CardContent>
       </Card>
-      <Card className="pb-2 rounded-lg">
+      <Card className="pb-2 rounded-xl">
         <CardHeader className="pb-0">
           <CardTitle className="">{intl.formatMessage(i18n.resetTitle)}</CardTitle>
           <CardDescription>

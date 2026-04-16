@@ -139,7 +139,7 @@ export default function TelemetrySettings() {
 
   return (
     <>
-      <Card className="rounded-lg">
+      <Card className="rounded-xl">
         <CardHeader className="pb-0">
           <CardTitle className="mb-1">{title}</CardTitle>
           <CardDescription>{description}</CardDescription>

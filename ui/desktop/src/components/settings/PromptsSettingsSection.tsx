@@ -257,7 +257,7 @@ export default function PromptsSettingsSection() {
   if (selectedPrompt) {
     return (
       <div className="space-y-4 pr-4 pb-8 mt-1">
-        <Card className="pb-2 rounded-lg">
+        <Card className="pb-2 rounded-xl">
           <CardHeader className="pb-4">
             <div className="flex items-center justify-between mb-4">
               <Button

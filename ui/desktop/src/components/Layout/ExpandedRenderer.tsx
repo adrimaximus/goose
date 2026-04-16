@@ -116,7 +116,7 @@ export const ExpandedRenderer: React.FC<NavigationRendererProps> = ({
       transition={{ duration: 0.15 }}
       className={cn(
         'bg-app h-full overflow-hidden outline-none',
-        isOverlayMode && 'backdrop-blur-md shadow-2xl rounded-lg p-4',
+        isOverlayMode && 'backdrop-blur-xl shadow-lg rounded-xl p-4',
         !isOverlayMode && navigationPosition === 'top' && 'pb-[2px]',
         !isOverlayMode && navigationPosition === 'bottom' && 'pt-[2px]',
         !isOverlayMode && navigationPosition === 'left' && 'pr-[2px]',
@@ -173,8 +173,8 @@ export const ExpandedRenderer: React.FC<NavigationRendererProps> = ({
                       <DropdownMenuTrigger asChild>
                         <motion.div
                           className={cn(
-                            'w-full relative flex flex-col rounded-lg',
-                            'transition-colors duration-200 aspect-square cursor-pointer',
+                            'w-full relative flex flex-col rounded-xl',
+                            'transition-colors duration-150 aspect-square cursor-pointer shadow-sm hover:shadow-md',
                             active
                               ? 'bg-background-inverse text-text-inverse'
                               : 'bg-background-primary hover:bg-background-tertiary'
@@ -239,8 +239,8 @@ export const ExpandedRenderer: React.FC<NavigationRendererProps> = ({
               >
                 <motion.div
                   className={cn(
-                    'w-full relative flex flex-col rounded-lg',
-                    'transition-colors duration-200 aspect-square',
+                    'w-full relative flex flex-col rounded-xl',
+                    'transition-colors duration-150 aspect-square shadow-sm hover:shadow-md',
                     active
                       ? 'bg-background-inverse text-text-inverse'
                       : 'bg-background-primary hover:bg-background-tertiary'
@@ -288,7 +288,7 @@ export const ExpandedRenderer: React.FC<NavigationRendererProps> = ({
                   : (gridColumns - (visibleItems.length % gridColumns)) % gridColumns,
             }).map((_, index) => (
               <div key={`spacer-${index}`} className="relative">
-                <div className="w-full aspect-square rounded-lg bg-background-primary" />
+                <div className="w-full aspect-square rounded-xl bg-background-primary" />
               </div>
             ))}
         </div>

@@ -31,7 +31,7 @@ export const SpellcheckToggle = () => {
   };
 
   return (
-    <div className="flex items-center justify-between py-2 px-2 hover:bg-background-secondary rounded-lg transition-all">
+    <div className="flex items-center justify-between py-2 px-2 hover:bg-background-secondary rounded-xl transition-all">
       <div>
         <h3 className="text-text-primary">{intl.formatMessage(i18n.title)}</h3>
         <p className="text-xs text-text-secondary max-w-md mt-[2px]">

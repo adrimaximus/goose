@@ -34,8 +34,8 @@ type ColorTokenKey = Exclude<McpUiStyleVariableKey, BaseTokenKey>;
 // ---------------------------------------------------------------------------
 const baseTokens: Pick<ThemeTokens, BaseTokenKey> = {
   // Typography — families
-  '--font-sans': "'Cash Sans', sans-serif",
-  '--font-mono': 'monospace',
+  '--font-sans': "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+  '--font-mono': "'Geist Mono', ui-monospace, SFMono-Regular, 'SF Mono', Menlo, monospace",
 
   // Typography — weights
   '--font-weight-normal': '400',
@@ -73,12 +73,12 @@ const baseTokens: Pick<ThemeTokens, BaseTokenKey> = {
   '--font-heading-2xl-line-height': '2.5rem',
   '--font-heading-3xl-line-height': '3.5rem',
 
-  // Border radius
-  '--border-radius-xs': '2px',
-  '--border-radius-sm': '4px',
-  '--border-radius-md': '8px',
-  '--border-radius-lg': '12px',
-  '--border-radius-xl': '16px',
+  // Border radius — pill-first system
+  '--border-radius-xs': '6px',
+  '--border-radius-sm': '8px',
+  '--border-radius-md': '12px',
+  '--border-radius-lg': '16px',
+  '--border-radius-xl': '20px',
   '--border-radius-full': '9999px',
 
   // Border width
@@ -89,115 +89,115 @@ const baseTokens: Pick<ThemeTokens, BaseTokenKey> = {
 type ColorTokens = Pick<ThemeTokens, ColorTokenKey>;
 
 // ---------------------------------------------------------------------------
-// Light theme — colors & shadows
+// Light theme — pure monochromatic palette
 // ---------------------------------------------------------------------------
 const lightColorTokens: ColorTokens = {
   // Backgrounds
   '--color-background-primary': '#ffffff',
-  '--color-background-secondary': '#f4f6f7',
-  '--color-background-tertiary': '#e3e6ea',
-  '--color-background-inverse': '#000000',
+  '--color-background-secondary': '#f5f5f5',
+  '--color-background-tertiary': '#f0f0f0',
+  '--color-background-inverse': '#1a1a1a',
   '--color-background-ghost': 'transparent',
   '--color-background-info': '#5c98f9',
   '--color-background-danger': '#f94b4b',
   '--color-background-success': '#91cb80',
   '--color-background-warning': '#fbcd44',
-  '--color-background-disabled': '#e3e6ea',
+  '--color-background-disabled': '#f0f0f0',
 
   // Text
-  '--color-text-primary': '#3f434b',
-  '--color-text-secondary': '#878787',
-  '--color-text-tertiary': '#a7b0b9',
+  '--color-text-primary': '#1a1a1a',
+  '--color-text-secondary': '#666666',
+  '--color-text-tertiary': '#999999',
   '--color-text-inverse': '#ffffff',
-  '--color-text-ghost': '#878787',
+  '--color-text-ghost': '#999999',
   '--color-text-info': '#5c98f9',
   '--color-text-danger': '#f94b4b',
   '--color-text-success': '#91cb80',
   '--color-text-warning': '#fbcd44',
-  '--color-text-disabled': '#cbd1d6',
+  '--color-text-disabled': '#cccccc',
 
   // Borders
-  '--color-border-primary': '#e3e6ea',
-  '--color-border-secondary': '#e3e6ea',
-  '--color-border-tertiary': '#cbd1d6',
-  '--color-border-inverse': '#000000',
+  '--color-border-primary': '#e8e8e8',
+  '--color-border-secondary': '#e8e8e8',
+  '--color-border-tertiary': '#cccccc',
+  '--color-border-inverse': '#1a1a1a',
   '--color-border-ghost': 'transparent',
   '--color-border-info': '#5c98f9',
   '--color-border-danger': '#f94b4b',
   '--color-border-success': '#91cb80',
   '--color-border-warning': '#fbcd44',
-  '--color-border-disabled': '#e3e6ea',
+  '--color-border-disabled': '#e8e8e8',
 
   // Rings
-  '--color-ring-primary': '#e3e6ea',
-  '--color-ring-secondary': '#cbd1d6',
+  '--color-ring-primary': '#e8e8e8',
+  '--color-ring-secondary': '#cccccc',
   '--color-ring-inverse': '#ffffff',
   '--color-ring-info': '#5c98f9',
   '--color-ring-danger': '#f94b4b',
   '--color-ring-success': '#91cb80',
   '--color-ring-warning': '#fbcd44',
 
-  // Shadows
-  '--shadow-hairline': '0 0 0 1px rgba(0, 0, 0, 0.05)',
-  '--shadow-sm': '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
-  '--shadow-md': '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1)',
-  '--shadow-lg': '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1)',
+  // Shadows — 4-tier hierarchy
+  '--shadow-hairline': '0 0 0 1px rgba(0, 0, 0, 0.04)',
+  '--shadow-sm': '0 2px 8px rgba(76, 76, 76, 0.15)',
+  '--shadow-md': '0 3px 12px rgba(76, 76, 76, 0.22)',
+  '--shadow-lg': '0 8px 30px rgba(0, 0, 0, 0.12)',
 };
 
 // ---------------------------------------------------------------------------
-// Dark theme — colors & shadows
+// Dark theme — OLED-friendly pure blacks
 // ---------------------------------------------------------------------------
 const darkColorTokens: ColorTokens = {
   // Backgrounds
-  '--color-background-primary': '#22252a',
-  '--color-background-secondary': '#3f434b',
-  '--color-background-tertiary': '#474e57',
-  '--color-background-inverse': '#cbd1d6',
+  '--color-background-primary': '#000000',
+  '--color-background-secondary': '#232323',
+  '--color-background-tertiary': '#333333',
+  '--color-background-inverse': '#f5f5f5',
   '--color-background-ghost': 'transparent',
   '--color-background-info': '#7cacff',
   '--color-background-danger': '#ff6b6b',
   '--color-background-success': '#a3d795',
   '--color-background-warning': '#ffd966',
-  '--color-background-disabled': '#474e57',
+  '--color-background-disabled': '#333333',
 
   // Text
   '--color-text-primary': '#ffffff',
-  '--color-text-secondary': '#878787',
-  '--color-text-tertiary': '#606c7a',
-  '--color-text-inverse': '#000000',
-  '--color-text-ghost': '#878787',
+  '--color-text-secondary': '#cccccc',
+  '--color-text-tertiary': '#999999',
+  '--color-text-inverse': '#1a1a1a',
+  '--color-text-ghost': '#999999',
   '--color-text-info': '#7cacff',
   '--color-text-danger': '#ff6b6b',
   '--color-text-success': '#a3d795',
   '--color-text-warning': '#ffd966',
-  '--color-text-disabled': '#525b68',
+  '--color-text-disabled': '#666666',
 
   // Borders
-  '--color-border-primary': '#3f434b',
-  '--color-border-secondary': '#525b68',
-  '--color-border-tertiary': '#474e57',
+  '--color-border-primary': '#333333',
+  '--color-border-secondary': '#666666',
+  '--color-border-tertiary': '#333333',
   '--color-border-inverse': '#ffffff',
   '--color-border-ghost': 'transparent',
   '--color-border-info': '#7cacff',
   '--color-border-danger': '#ff6b6b',
   '--color-border-success': '#a3d795',
   '--color-border-warning': '#ffd966',
-  '--color-border-disabled': '#3f434b',
+  '--color-border-disabled': '#333333',
 
   // Rings
-  '--color-ring-primary': '#525b68',
-  '--color-ring-secondary': '#474e57',
-  '--color-ring-inverse': '#000000',
+  '--color-ring-primary': '#666666',
+  '--color-ring-secondary': '#333333',
+  '--color-ring-inverse': '#1a1a1a',
   '--color-ring-info': '#7cacff',
   '--color-ring-danger': '#ff6b6b',
   '--color-ring-success': '#a3d795',
   '--color-ring-warning': '#ffd966',
 
-  // Shadows (darker for dark mode)
-  '--shadow-hairline': '0 0 0 1px rgba(0, 0, 0, 0.2)',
-  '--shadow-sm': '0 1px 2px 0 rgba(0, 0, 0, 0.2)',
-  '--shadow-md': '0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -2px rgba(0, 0, 0, 0.2)',
-  '--shadow-lg': '0 10px 15px -3px rgba(0, 0, 0, 0.3), 0 4px 6px -4px rgba(0, 0, 0, 0.2)',
+  // Shadows — doubled intensity for dark backgrounds
+  '--shadow-hairline': '0 0 0 1px rgba(0, 0, 0, 0.3)',
+  '--shadow-sm': '0 2px 8px rgba(0, 0, 0, 0.4)',
+  '--shadow-md': '0 3px 12px rgba(0, 0, 0, 0.5)',
+  '--shadow-lg': '0 8px 30px rgba(0, 0, 0, 0.4)',
 };
 
 // ---------------------------------------------------------------------------

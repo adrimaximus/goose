@@ -547,7 +547,7 @@ export const MeshSettings = () => {
                   return (
                     <div
                       key={modelId}
-                      className={`border rounded-lg p-3 transition-colors cursor-pointer ${
+                      className={`border rounded-xl p-3 transition-colors cursor-pointer ${
                         isActive
                           ? 'border-green-500/50 bg-green-500/5'
                           : 'border-border-subtle bg-background-default hover:border-border-default'

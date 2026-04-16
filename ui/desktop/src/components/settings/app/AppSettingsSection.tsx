@@ -135,7 +135,7 @@ const NavigationSettingsContent: React.FC = () => {
   const intl = useIntl();
 
   return (
-    <Card className="rounded-lg">
+    <Card className="rounded-xl">
       <CardHeader className="pb-0">
         <button
           onClick={() => setIsExpanded(!isExpanded)}
@@ -328,7 +328,7 @@ export default function AppSettingsSection({ scrollToSection }: AppSettingsSecti
 
   return (
     <div className="space-y-4 pr-4 pb-8 mt-1">
-      <Card className="rounded-lg">
+      <Card className="rounded-xl">
         <CardHeader className="pb-0">
           <CardTitle className="">{intl.formatMessage(i18n.appearanceTitle)}</CardTitle>
           <CardDescription>{intl.formatMessage(i18n.appearanceDesc)}</CardDescription>
@@ -444,7 +444,7 @@ export default function AppSettingsSection({ scrollToSection }: AppSettingsSecti
         </CardContent>
       </Card>
 
-      <Card className="rounded-lg">
+      <Card className="rounded-xl">
         <CardHeader className="pb-0">
           <CardTitle className="mb-1">{intl.formatMessage(i18n.themeTitle)}</CardTitle>
           <CardDescription>{intl.formatMessage(i18n.themeDesc)}</CardDescription>
@@ -459,7 +459,7 @@ export default function AppSettingsSection({ scrollToSection }: AppSettingsSecti
 
       <TelemetrySettings />
 
-      <Card className="rounded-lg">
+      <Card className="rounded-xl">
         <CardHeader className="pb-0">
           <CardTitle className="mb-1">{intl.formatMessage(i18n.helpTitle)}</CardTitle>
           <CardDescription>{intl.formatMessage(i18n.helpDesc)}</CardDescription>
@@ -496,7 +496,7 @@ export default function AppSettingsSection({ scrollToSection }: AppSettingsSecti
 
       {/* Version Section - only show if GOOSE_VERSION is set */}
       {!shouldShowUpdates && (
-        <Card className="rounded-lg">
+        <Card className="rounded-xl">
           <CardHeader className="pb-0">
             <CardTitle className="mb-1">{intl.formatMessage(i18n.versionTitle)}</CardTitle>
           </CardHeader>
@@ -518,7 +518,7 @@ export default function AppSettingsSection({ scrollToSection }: AppSettingsSecti
       {/* Update Section - only show if GOOSE_VERSION is NOT set */}
       {UPDATES_ENABLED && shouldShowUpdates && (
         <div ref={updateSectionRef}>
-          <Card className="rounded-lg">
+          <Card className="rounded-xl">
             <CardHeader className="pb-0">
               <CardTitle className="mb-1">{intl.formatMessage(i18n.updatesTitle)}</CardTitle>
               <CardDescription>{intl.formatMessage(i18n.updatesDesc)}</CardDescription>

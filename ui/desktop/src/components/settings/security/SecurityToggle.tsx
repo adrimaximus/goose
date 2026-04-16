@@ -292,7 +292,7 @@ export const SecurityToggle = () => {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between py-2 px-2 hover:bg-background-secondary rounded-lg transition-all">
+      <div className="flex items-center justify-between py-2 px-2 hover:bg-background-secondary rounded-xl transition-all">
         <div>
           <h3 className="text-text-primary">{intl.formatMessage(i18n.enablePromptInjection)}</h3>
           <p className="text-xs text-text-secondary max-w-md mt-[2px]">
@@ -350,7 +350,7 @@ export const SecurityToggle = () => {
 
           {/* Command Injection Detection Toggle */}
           <div className="border-t border-border-primary pt-4">
-            <div className="flex items-center justify-between py-2 hover:bg-background-secondary rounded-lg transition-all">
+            <div className="flex items-center justify-between py-2 hover:bg-background-secondary rounded-xl transition-all">
               <div>
                 <h4
                   className={`text-sm font-medium ${enabled ? 'text-text-primary' : 'text-text-secondary'}`}
@@ -409,7 +409,7 @@ export const SecurityToggle = () => {
 
           {/* Prompt Injection Detection Toggle */}
           <div className="border-t border-border-primary pt-4">
-            <div className="flex items-center justify-between py-2 hover:bg-background-secondary rounded-lg transition-all">
+            <div className="flex items-center justify-between py-2 hover:bg-background-secondary rounded-xl transition-all">
               <div>
                 <h4
                   className={`text-sm font-medium ${enabled ? 'text-text-primary' : 'text-text-secondary'}`}

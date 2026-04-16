@@ -250,7 +250,7 @@ export default function TunnelSection() {
 
   return (
     <>
-      <Card className="rounded-lg">
+      <Card className="rounded-xl">
         <CardHeader className="pb-0">
           <CardTitle className="mb-1">{intl.formatMessage(i18n.mobileApp)}</CardTitle>
           <CardDescription className="flex flex-col gap-2">

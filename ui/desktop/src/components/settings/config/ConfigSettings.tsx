@@ -206,7 +206,7 @@ export default function ConfigSettings() {
   }, [originalKeyOrder, configValues, currentProvider]);
 
   return (
-    <Card className="rounded-lg">
+    <Card className="rounded-xl">
       <CardHeader className="pb-0">
         <CardTitle className="flex items-center gap-2">
           <FileText className="text-iconStandard" size={20} />

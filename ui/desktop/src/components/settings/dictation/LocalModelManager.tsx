@@ -204,7 +204,7 @@ export const LocalModelManager = () => {
           return (
             <div
               key={model.id}
-              className={`border rounded-lg p-3 transition-colors ${
+              className={`border rounded-xl p-3 transition-colors ${
                 isSelected
                   ? 'border-text-inverse bg-background-inverse/5'
                   : 'border-border-primary bg-background-primary hover:border-border-primary'
