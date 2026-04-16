@@ -1,5 +1,13 @@
 import '../../Justfile'
 
+# Derive a stable port from the working directory so the same worktree
+# always gets the same port.
+vite_port := `python3 -c "import hashlib,os; h=int(hashlib.sha256(os.getcwd().encode()).hexdigest(),16); print(10000 + h % 55000)"`
+
+# Default recipe
+default:
+    @just --list
+
 # ── Dev Environment ──────────────────────────────────────────
 
 # Install dependencies
@@ -76,11 +84,7 @@ dev: build-debug
         export GOOSE_BIN="$(cargo metadata --format-version 1 | jq -r '.target_directory')/debug/goose"
     fi
 
-    # Derive a stable port from the working directory so the same worktree
-    # always gets the same port. This avoids changing TAURI_CONFIG between
-    # runs, which would invalidate Cargo's build cache and trigger a full
-    # Rust rebuild every time.
-    VITE_PORT=$(python3 -c "import hashlib,os; h=int(hashlib.sha256(os.getcwd().encode()).hexdigest(),16); print(10000 + h % 55000)")
+    VITE_PORT={{ vite_port }}
     export VITE_PORT
     PROJECT_DIR=$(pwd)
     TAURI_CONFIG="{\"build\":{\"devUrl\":\"http://localhost:${VITE_PORT}\",\"beforeDevCommand\":{\"script\":\"cd ${PROJECT_DIR} && exec pnpm exec vite --port ${VITE_PORT} --strictPort\",\"cwd\":\".\",\"wait\":false}}}"
@@ -114,7 +118,7 @@ dev-debug: build-debug
         export GOOSE_BIN="$(cargo metadata --format-version 1 | jq -r '.target_directory')/debug/goose"
     fi
 
-    VITE_PORT=$(python3 -c "import hashlib,os; h=int(hashlib.sha256(os.getcwd().encode()).hexdigest(),16); print(10000 + h % 55000)")
+    VITE_PORT={{ vite_port }}
     export VITE_PORT
     EXTRA_CONFIG="--config {\"build\":{\"devUrl\":\"http://localhost:${VITE_PORT}\",\"beforeDevCommand\":{\"script\":\"exec ./node_modules/.bin/vite --port ${VITE_PORT} --strictPort\",\"cwd\":\"..\",\"wait\":false}}}"
 
@@ -141,6 +145,28 @@ dev-debug: build-debug
 # Start only the frontend dev server
 dev-frontend:
     pnpm dev
+
+# Kill the dev process (if running)
+kill:
+    #!/usr/bin/env bash
+    set -euo pipefail
+
+    VITE_PORT={{ vite_port }}
+    PID=$(lsof -ti :"$VITE_PORT" 2>/dev/null | head -1) || true
+
+    if [[ -z "$PID" ]]; then
+        echo "No process found on port $VITE_PORT"
+        exit 0
+    fi
+
+    PROC_NAME=$(ps -p "$PID" -o comm= 2>/dev/null) || true
+    if [[ "$PROC_NAME" != "node" ]]; then
+        echo "Process on port $VITE_PORT is '$PROC_NAME', not 'node' — refusing to kill"
+        exit 1
+    fi
+
+    echo "Killing node (PID $PID) on port $VITE_PORT"
+    kill -9 "$PID"
 
 # ── Utilities ────────────────────────────────────────────────
 

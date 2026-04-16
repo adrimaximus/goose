@@ -1,8 +1,11 @@
 {
   "attachments": {
     "alt": "Attachment {{index}}",
-    "dropToAttach": "Drop images to attach",
-    "remove": "Remove image",
+    "chooseFilesDialogTitle": "Choose files to attach",
+    "chooseFoldersDialogTitle": "Choose folders to attach",
+    "dropToAttach": "Drop files or folders to attach",
+    "open": "Open attachment {{name}}",
+    "remove": "Remove attachment",
     "view": "View attachment {{index}}"
   },
   "context": {
@@ -43,7 +46,8 @@
       "folderNotSet": "Folder not set",
       "noChanges": "No uncommitted changes",
       "noProjectAssigned": "No project assigned.",
-      "noServersConfigured": "No servers configured"
+      "noExtensions": "No extensions enabled",
+      "noMatchingExtensions": "No matching extensions"
     },
     "errors": {
       "gitRead": "Unable to read git status."
@@ -86,7 +90,8 @@
       "artifacts": "Artifacts",
       "changes": "Changes",
       "changesOnBranch": "on",
-      "mcpServers": "MCP Servers",
+      "extensions": "Extensions",
+      "searchExtensions": "Search extensions...",
       "workspace": "Workspace"
     }
   },
@@ -141,6 +146,9 @@
   },
   "toolbar": {
     "agent": "Agent",
+    "attach": "Attach",
+    "attachFile": "File",
+    "attachFolder": "Folder",
     "chooseAgentModel": "Choose agent and model",
     "chooseProject": "Choose a project",
     "chooseProvider": "Choose a provider",

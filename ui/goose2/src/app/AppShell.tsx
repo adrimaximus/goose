@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Sidebar } from "@/features/sidebar/ui/Sidebar";
 import { StatusBar } from "@/features/status/ui/StatusBar";
-import type { PastedImage } from "@/shared/types/messages";
+import type { ChatAttachmentDraft } from "@/shared/types/messages";
 import { CreateProjectDialog } from "@/features/projects/ui/CreateProjectDialog";
 import { archiveProject } from "@/features/projects/api/projects";
 import type { ProjectInfo } from "@/features/projects/api/projects";
@@ -98,6 +98,7 @@ export function AppShell({ children }: { children?: React.ReactNode }) {
           ? resolveEffectiveWorkingDir(null, await getHomeDir())
           : undefined);
       await acpLoadSession(sessionId, gooseSessionId, workingDir);
+      useChatStore.getState().setSessionLoading(sessionId, false);
       const t3 = performance.now();
       console.log(
         `[perf:load] ${sessionId.slice(0, 8)} acpLoadSession resolved in ${(t3 - t2).toFixed(1)}ms (total ${(t3 - t0).toFixed(1)}ms)`,
@@ -135,8 +136,8 @@ export function AppShell({ children }: { children?: React.ReactNode }) {
   const [pendingInitialMessage, setPendingInitialMessage] = useState<
     string | undefined
   >();
-  const [pendingInitialImages, setPendingInitialImages] = useState<
-    PastedImage[] | undefined
+  const [pendingInitialAttachments, setPendingInitialAttachments] = useState<
+    ChatAttachmentDraft[] | undefined
   >();
   const [homeSelectedPersonaId, setHomeSelectedPersonaId] = useState<
     string | undefined
@@ -363,12 +364,12 @@ export function AppShell({ children }: { children?: React.ReactNode }) {
       providerId?: string,
       personaId?: string,
       projectId?: string | null,
-      images?: PastedImage[],
+      attachments?: ChatAttachmentDraft[],
     ) => {
       setHomeSelectedProvider(providerId);
       setHomeSelectedPersonaId(personaId);
       setPendingInitialMessage(initialMessage);
-      setPendingInitialImages(images);
+      setPendingInitialAttachments(attachments);
       const selectedProject =
         projectId != null
           ? projectStore.projects.find((project) => project.id === projectId)
@@ -501,7 +502,7 @@ export function AppShell({ children }: { children?: React.ReactNode }) {
   const activeSessionPersonaId = activeSession?.personaId;
   const handleInitialMessageConsumed = useCallback(() => {
     setPendingInitialMessage(undefined);
-    setPendingInitialImages(undefined);
+    setPendingInitialAttachments(undefined);
     setHomeSelectedProvider(undefined);
     setHomeSelectedPersonaId(undefined);
   }, []);
@@ -553,6 +554,7 @@ export function AppShell({ children }: { children?: React.ReactNode }) {
             onArchiveChat={handleArchiveChat}
             onRenameChat={handleRenameChat}
             onMoveToProject={handleMoveToProject}
+            onReorderProject={projectStore.reorderProjects}
             onSelectSession={handleSelectSession}
             onSelectSearchResult={handleSelectSearchResult}
             activeView={activeView}
@@ -580,7 +582,7 @@ export function AppShell({ children }: { children?: React.ReactNode }) {
               homeSelectedProvider={homeSelectedProvider}
               homeSelectedPersonaId={homeSelectedPersonaId}
               pendingInitialMessage={pendingInitialMessage}
-              pendingInitialImages={pendingInitialImages}
+              pendingInitialAttachments={pendingInitialAttachments}
               onArchiveChat={handleArchiveChat}
               onCreateProject={openCreateProjectDialog}
               onHomeStartChat={handleHomeStartChat}

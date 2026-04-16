@@ -1,8 +1,11 @@
 {
   "attachments": {
     "alt": "Adjunto {{index}}",
-    "dropToAttach": "Suelta imágenes para adjuntarlas",
-    "remove": "Eliminar imagen",
+    "chooseFilesDialogTitle": "Elegir archivos para adjuntar",
+    "chooseFoldersDialogTitle": "Elegir carpetas para adjuntar",
+    "dropToAttach": "Suelta archivos o carpetas para adjuntarlos",
+    "open": "Abrir adjunto {{name}}",
+    "remove": "Eliminar adjunto",
     "view": "Ver adjunto {{index}}"
   },
   "context": {
@@ -43,7 +46,8 @@
       "folderNotSet": "Carpeta no configurada",
       "noChanges": "No hay cambios sin confirmar",
       "noProjectAssigned": "No hay proyecto asignado.",
-      "noServersConfigured": "No hay servidores configurados"
+      "noExtensions": "No hay extensiones habilitadas",
+      "noMatchingExtensions": "No hay extensiones que coincidan"
     },
     "errors": {
       "gitRead": "No se pudo leer el estado de git."
@@ -86,7 +90,8 @@
       "artifacts": "Artefactos",
       "changes": "Cambios",
       "changesOnBranch": "en",
-      "mcpServers": "Servidores MCP",
+      "extensions": "Extensiones",
+      "searchExtensions": "Buscar extensiones...",
       "workspace": "Espacio de trabajo"
     }
   },
@@ -141,6 +146,9 @@
   },
   "toolbar": {
     "agent": "Agente",
+    "attach": "Adjuntar",
+    "attachFile": "Archivo",
+    "attachFolder": "Carpeta",
     "chooseAgentModel": "Elegir agente y modelo",
     "chooseProject": "Elegir un proyecto",
     "chooseProvider": "Elegir un proveedor",
