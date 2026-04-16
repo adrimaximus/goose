@@ -492,7 +492,15 @@ async fn create_streamable_http_client(
                     .await?,
                 ))
             }
-            Err(_) => Ok(Box::new(client_res?)),
+            Err(e) => {
+                tracing::warn!(
+                    extension = %name,
+                    uri = %uri,
+                    error = %e,
+                    "OAuth flow failed, returning original auth error"
+                );
+                Ok(Box::new(client_res?))
+            }
         }
     } else {
         Ok(Box::new(client_res?))

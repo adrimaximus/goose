@@ -6,13 +6,16 @@ use axum::routing::get;
 use axum::Router;
 use minijinja::render;
 use oauth2::TokenResponse;
-use rmcp::transport::auth::{CredentialStore, OAuthState, StoredCredentials};
+use rmcp::transport::auth::{
+    AuthorizationMetadata, AuthorizationSession, CredentialStore, OAuthState, StoredCredentials,
+};
 use rmcp::transport::AuthorizationManager;
 use serde::Deserialize;
 use std::net::SocketAddr;
 use std::sync::Arc;
 use tokio::sync::{oneshot, Mutex};
 use tracing::warn;
+use url::Url;
 
 use crate::oauth::persist::GooseCredentialStore;
 
@@ -81,14 +84,34 @@ pub async fn oauth_flow(
     let mut oauth_state = OAuthState::new(mcp_server_url, None).await?;
 
     let redirect_uri = format!("http://127.0.0.1:{}/oauth_callback", used_addr.port());
-    oauth_state
+    if let Err(e) = oauth_state
         .start_authorization_with_metadata_url(
             &[],
             redirect_uri.as_str(),
             Some("goose"),
             Some(CLIENT_METADATA_URL),
         )
-        .await?;
+        .await
+    {
+        // Workaround for an rmcp bug where resource metadata discovery fails fatally
+        // when the MCP server returns non-JSON (e.g. HTML) at its base URL with HTTP 200,
+        // preventing fallback to .well-known/oauth-authorization-server discovery.
+        // See: https://github.com/modelcontextprotocol/rust-sdk/pull/810
+        warn!(
+            "OAuth authorization failed, retrying with direct metadata discovery: {}",
+            e
+        );
+        oauth_state = start_authorization_with_wellknown_fallback(
+            mcp_server_url,
+            &redirect_uri,
+        )
+        .await
+        .map_err(|fallback_err| {
+            anyhow::anyhow!(
+                "OAuth authorization failed: {e}; fallback also failed: {fallback_err}"
+            )
+        })?;
+    }
 
     let authorization_url = oauth_state.get_authorization_url().await?;
     if webbrowser::open(authorization_url.as_str()).is_err() {
@@ -131,4 +154,37 @@ pub async fn oauth_flow(
     auth_manager.set_credential_store(credential_store);
 
     Ok(auth_manager)
+}
+
+/// Fallback for when OAuthState::start_authorization_with_metadata_url fails due to
+/// the resource metadata discovery bug. Fetches OAuth metadata directly from the
+/// .well-known/oauth-authorization-server endpoint and creates the session manually.
+async fn start_authorization_with_wellknown_fallback(
+    mcp_server_url: &str,
+    redirect_uri: &str,
+) -> Result<OAuthState, anyhow::Error> {
+    let base_url = Url::parse(mcp_server_url)?;
+    let wellknown_url = format!(
+        "{}/.well-known/oauth-authorization-server",
+        base_url.origin().ascii_serialization()
+    );
+    let metadata = reqwest::get(&wellknown_url)
+        .await?
+        .error_for_status()?
+        .json::<AuthorizationMetadata>()
+        .await?;
+
+    let mut manager = AuthorizationManager::new(mcp_server_url).await?;
+    manager.set_metadata(metadata);
+
+    let session = AuthorizationSession::new(
+        manager,
+        &[],
+        redirect_uri,
+        Some("goose"),
+        Some(CLIENT_METADATA_URL),
+    )
+    .await?;
+
+    Ok(OAuthState::Session(session))
 }
