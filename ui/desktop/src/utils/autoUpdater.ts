@@ -369,8 +369,11 @@ export function setupAutoUpdater(tray?: Tray) {
   }
 
   // Configure auto-updater settings
-  autoUpdater.autoDownload = true; // Automatically download updates when available
-  autoUpdater.autoInstallOnAppQuit = true;
+  // Disable auto-download: let the user choose when to download.
+  // Auto-downloading while the app is running causes Squirrel to rename the
+  // .app bundle mid-session, which corrupts V8's heap state and crashes the app.
+  autoUpdater.autoDownload = false;
+  autoUpdater.autoInstallOnAppQuit = false;
 
   // Enable updates in development mode for testing
   if (process.env.ENABLE_DEV_UPDATES === 'true') {
