@@ -95,12 +95,12 @@ describe("useChat attachments", () => {
     expect(mockAcpSendMessage).toHaveBeenCalledWith(
       "session-1",
       "Attached items:\n- [file] /tmp/report.pdf\n- [directory] /tmp/screenshots\nPlease review these",
-      {
+      expect.objectContaining({
         systemPrompt: undefined,
         personaId: undefined,
         personaName: undefined,
         images: undefined,
-      },
+      }),
     );
   });
 
@@ -146,12 +146,12 @@ describe("useChat attachments", () => {
     expect(mockAcpSendMessage).toHaveBeenCalledWith(
       "session-1",
       "Attached items:\n- [image] diagram.png (image attached)\n ",
-      {
+      expect.objectContaining({
         systemPrompt: undefined,
         personaId: undefined,
         personaName: undefined,
         images: [["abc123", "image/png"]],
-      },
+      }),
     );
   });
 
@@ -193,12 +193,12 @@ describe("useChat attachments", () => {
     expect(mockAcpSendMessage).toHaveBeenCalledWith(
       "session-1",
       "Attached items:\n- [file] /tmp/mobile-confirmation.html\n- [directory] /tmp/neighborhood block\n- [image] Screenshot 2026-04-09 at 1.25.32 PM.png (image attached)\ncan you see the attachments i attached?",
-      {
+      expect.objectContaining({
         systemPrompt: undefined,
         personaId: undefined,
         personaName: undefined,
         images: [["abc123", "image/png"]],
-      },
+      }),
     );
   });
 
@@ -233,12 +233,12 @@ describe("useChat attachments", () => {
     expect(mockAcpSendMessage).toHaveBeenCalledWith(
       "session-1",
       "Attached items:\n- [file] report.pdf\nPlease review this",
-      {
+      expect.objectContaining({
         systemPrompt: undefined,
         personaId: undefined,
         personaName: undefined,
         images: undefined,
-      },
+      }),
     );
   });
 });

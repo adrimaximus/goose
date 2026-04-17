@@ -127,12 +127,14 @@ describe("useChat", () => {
       result.current.stopGeneration();
     });
 
-    expect(mockAcpSendMessage).toHaveBeenCalledWith("session-1", "Hello", {
-      systemPrompt: undefined,
-      personaId: "persona-b",
-      personaName: "Persona B",
-      images: undefined,
-    });
+    expect(mockAcpSendMessage).toHaveBeenCalledWith("session-1", "Hello",
+      expect.objectContaining({
+        systemPrompt: undefined,
+        personaId: "persona-b",
+        personaName: "Persona B",
+        images: undefined,
+      }),
+    );
     expect(mockAcpCancelSession).toHaveBeenCalledWith("session-1", "persona-b");
 
     deferred.resolve();
@@ -313,23 +315,23 @@ describe("useChat", () => {
       1,
       "session-1",
       "First",
-      {
+      expect.objectContaining({
         systemPrompt: undefined,
         personaId: undefined,
         personaName: undefined,
         images: undefined,
-      },
+      }),
     );
     expect(mockAcpSendMessage).toHaveBeenNthCalledWith(
       2,
       "session-2",
       "Second",
-      {
+      expect.objectContaining({
         systemPrompt: undefined,
         personaId: undefined,
         personaName: undefined,
         images: undefined,
-      },
+      }),
     );
 
     deferred.resolve();
@@ -366,12 +368,14 @@ describe("useChat", () => {
       personaId: undefined,
     });
     expect(mockAcpSetModel).toHaveBeenCalledWith("session-1", "gpt-4.1");
-    expect(mockAcpSendMessage).toHaveBeenCalledWith("session-1", "Hello", {
-      systemPrompt: undefined,
-      personaId: undefined,
-      personaName: undefined,
-      images: undefined,
-    });
+    expect(mockAcpSendMessage).toHaveBeenCalledWith("session-1", "Hello",
+      expect.objectContaining({
+        systemPrompt: undefined,
+        personaId: undefined,
+        personaName: undefined,
+        images: undefined,
+      }),
+    );
   });
 
   it("appends an error message and removes the empty assistant placeholder when send fails", async () => {

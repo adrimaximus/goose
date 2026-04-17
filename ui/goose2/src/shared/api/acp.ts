@@ -22,6 +22,10 @@ export interface AcpSendMessageOptions {
    *  from both the display log and LLM context before appending the new prompt.
    *  Used by edit and retry to rewind the conversation. */
   truncateBeforeMessageId?: string;
+  /** Pre-generated message ID to use for this user message.  When provided the
+   *  same ID is registered with the notification handler and sent to the
+   *  backend so the frontend store and backend thread_messages stay in sync. */
+  messageId?: string;
 }
 
 export interface AcpPrepareSessionOptions {
@@ -63,7 +67,7 @@ export async function acpSendMessage(
     ? { truncate_before_message_id: truncateBeforeMessageId }
     : undefined;
 
-  const messageId = crypto.randomUUID();
+  const messageId = options.messageId ?? crypto.randomUUID();
   setActiveMessageId(gooseSessionId, messageId);
 
   await directAcp.prompt(gooseSessionId, content, messageId, meta);

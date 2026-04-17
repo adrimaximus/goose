@@ -244,6 +244,7 @@ export function useChat(
             (img) => [img.base64, img.mimeType] as [string, string],
           ),
           truncateBeforeMessageId,
+          messageId: userMessage.id,
         });
 
         store.setChatState(sessionId, "idle");
