@@ -74,22 +74,20 @@ async function initializeConnection(): Promise<GooseClient> {
 
   const client = new GooseClient(createClientCallbacks(), stream);
 
-  await client.initialize(
-    {
-      protocolVersion: PROTOCOL_VERSION,
-      clientCapabilities: {
-        _meta: {
-          goose: {
-            mcpHostCapabilities: DEFAULT_GOOSE_MCP_HOST_CAPABILITIES,
-          },
+  await client.initialize({
+    protocolVersion: PROTOCOL_VERSION,
+    clientCapabilities: {
+      _meta: {
+        goose: {
+          mcpHostCapabilities: DEFAULT_GOOSE_MCP_HOST_CAPABILITIES,
         },
       },
-      clientInfo: {
-        name: packageJson.name,
-        version: packageJson.version,
-      },
-    } satisfies GooseInitializeRequest,
-  );
+    },
+    clientInfo: {
+      name: packageJson.name,
+      version: packageJson.version,
+    },
+  } satisfies GooseInitializeRequest);
 
   monitorConnection(client);
 
