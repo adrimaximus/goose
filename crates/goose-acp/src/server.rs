@@ -1523,12 +1523,17 @@ impl GooseAcpAgent {
                 continue;
             }
 
+            let msg_id = message.id.clone();
+
             for content_item in &message.content {
                 match content_item {
                     MessageContent::Text(text) => {
-                        let chunk = ContentChunk::new(ContentBlock::Text(TextContent::new(
+                        let mut chunk = ContentChunk::new(ContentBlock::Text(TextContent::new(
                             text.text.clone(),
                         )));
+                        if let Some(ref id) = msg_id {
+                            chunk = chunk.message_id(id.clone());
+                        }
                         let update = match message.role {
                             Role::User => SessionUpdate::UserMessageChunk(chunk),
                             Role::Assistant => SessionUpdate::AgentMessageChunk(chunk),
@@ -1728,7 +1733,12 @@ impl GooseAcpAgent {
             );
         }
 
-        let user_message = self.convert_acp_prompt_to_message(args.prompt);
+        let mut user_message = self.convert_acp_prompt_to_message(args.prompt);
+        // Use the client-provided message_id so the frontend and backend
+        // share the same ID — required for edit/retry truncation to work.
+        if let Some(client_msg_id) = args.message_id {
+            user_message.id = Some(client_msg_id);
+        }
 
         self.thread_manager
             .append_message(&thread_id, Some(&internal_session_id), &user_message)
