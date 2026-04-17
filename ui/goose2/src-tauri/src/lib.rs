@@ -9,6 +9,7 @@ use tauri_plugin_window_state::StateFlags;
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     let builder = tauri::Builder::default()
+        .plugin(tauri_plugin_shell::init())
         .plugin(
             tauri_plugin_log::Builder::new()
                 .level(log::LevelFilter::Debug)
@@ -83,6 +84,7 @@ pub fn run() {
             commands::agent_setup::check_agent_auth,
             commands::agent_setup::install_agent,
             commands::agent_setup::authenticate_agent,
+            commands::path_resolver::resolve_path,
             commands::system::get_home_dir,
             commands::system::save_exported_session_file,
             commands::system::path_exists,

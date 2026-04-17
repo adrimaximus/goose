@@ -19,6 +19,7 @@ import {
   isDefaultChatTitle,
 } from "../lib/sessionTitle";
 import { findLastIndex } from "@/shared/lib/arrays";
+import { perfLog } from "@/shared/lib/perfLog";
 import {
   buildAcpImages,
   buildAttachmentPromptPreamble,
@@ -83,7 +84,7 @@ export function useChat(
   providerOverride?: string,
   systemPromptOverride?: string,
   personaInfo?: { id: string; name: string },
-  workingDirOverride?: string,
+  getWorkingDir?: () => Promise<string | undefined>,
 ) {
   const store = useChatStore();
   const abortRef = useRef<AbortController | null>(null);
@@ -129,6 +130,8 @@ export function useChat(
       overridePersona?: { id: string; name?: string },
       attachments?: ChatAttachmentDraft[],
     ) => {
+      const sid = sessionId.slice(0, 8);
+      const tSendStart = performance.now();
       const images = buildAcpImages(attachments);
       const hasAttachments = (attachments?.length ?? 0) > 0;
       if (
@@ -137,6 +140,9 @@ export function useChat(
         chatState === "thinking"
       )
         return;
+      perfLog(
+        `[perf:send] ${sid} useChat.sendMessage start (textLen=${text.length}, attachments=${attachments?.length ?? 0})`,
+      );
 
       const effectivePersonaInfo = resolvePersonaInfo(
         overridePersona?.id,
@@ -218,12 +224,23 @@ export function useChat(
 
       try {
         if (wasDraft || selectedModelId) {
-          await acpPrepareSession(sessionId, providerId, {
-            workingDir: workingDirOverride,
+          const workingDir = await getWorkingDir?.();
+          if (!workingDir) {
+            throw new Error("Missing session working directory");
+          }
+          const tPrep = performance.now();
+          await acpPrepareSession(sessionId, providerId, workingDir, {
             personaId: effectivePersonaInfo?.id,
           });
+          perfLog(
+            `[perf:send] ${sid} acpPrepareSession in ${(performance.now() - tPrep).toFixed(1)}ms (wasDraft=${wasDraft})`,
+          );
           if (selectedModelId) {
+            const tModel = performance.now();
             await acpSetModel(sessionId, selectedModelId);
+            perfLog(
+              `[perf:send] ${sid} acpSetModel(${selectedModelId}) in ${(performance.now() - tModel).toFixed(1)}ms`,
+            );
           }
         }
 
@@ -234,6 +251,10 @@ export function useChat(
           buildAttachmentPromptPreamble(attachments);
         const promptBody = text.trim() || (images?.length ? " " : text);
         const acpPrompt = `${attachmentPromptPreamble}${promptBody}`;
+        const tAcp = performance.now();
+        perfLog(
+          `[perf:send] ${sid} → acpSendMessage (setup took ${(tAcp - tSendStart).toFixed(1)}ms)`,
+        );
         await acpSendMessage(sessionId, acpPrompt, {
           systemPrompt,
           personaId: effectivePersonaInfo?.id,
@@ -242,6 +263,9 @@ export function useChat(
             (img) => [img.base64, img.mimeType] as [string, string],
           ),
         });
+        perfLog(
+          `[perf:send] ${sid} acpSendMessage returned after ${(performance.now() - tAcp).toFixed(1)}ms (total sendMessage ${(performance.now() - tSendStart).toFixed(1)}ms)`,
+        );
 
         store.setChatState(sessionId, "idle");
         store.setStreamingMessageId(sessionId, null);
@@ -299,7 +323,7 @@ export function useChat(
       providerOverride,
       systemPromptOverride,
       resolvePersonaInfo,
-      workingDirOverride,
+      getWorkingDir,
     ],
   );
 
