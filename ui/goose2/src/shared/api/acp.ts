@@ -146,7 +146,7 @@ export async function acpLoadSession(
   const effectiveWorkingDir = workingDir ?? "~/.goose/artifacts";
   const sid = sessionId.slice(0, 8);
   const t0 = performance.now();
-  sessionTracker.registerSession(
+  const rollbackSessionRegistration = sessionTracker.registerSession(
     sessionId,
     gooseSessionId,
     "goose",
@@ -159,7 +159,7 @@ export async function acpLoadSession(
       `[perf:load] ${sid} client.loadSession resolved in ${(performance.now() - t0).toFixed(1)}ms`,
     );
   } catch (error) {
-    sessionTracker.unregisterSession(sessionId, gooseSessionId);
+    rollbackSessionRegistration();
     throw error;
   }
 }

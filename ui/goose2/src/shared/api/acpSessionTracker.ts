@@ -16,6 +16,18 @@ const prepared = new Map<string, PreparedSession>();
 const gooseToLocal = new Map<string, string>();
 const registrationListeners = new Set<SessionRegistrationListener>();
 
+function restoreGooseRegistration(
+  gooseSessionId: string,
+  localSessionId: string | undefined,
+): void {
+  if (localSessionId === undefined) {
+    gooseToLocal.delete(gooseSessionId);
+    return;
+  }
+
+  gooseToLocal.set(gooseSessionId, localSessionId);
+}
+
 function makeKey(sessionId: string, personaId?: string): string {
   if (personaId && personaId.length > 0) {
     return `${sessionId}__${personaId}`;
@@ -132,11 +144,40 @@ export function registerSession(
   gooseSessionId: string,
   providerId: string,
   workingDir: string,
-): void {
+): () => void {
+  const previousEntry = prepared.get(sessionId);
+  const previousGooseSessionLocal = gooseToLocal.get(gooseSessionId);
+  const previousSessionGooseLocal = previousEntry
+    ? gooseToLocal.get(previousEntry.gooseSessionId)
+    : undefined;
   const entry = { gooseSessionId, providerId, workingDir };
+
+  if (
+    previousEntry &&
+    previousEntry.gooseSessionId !== gooseSessionId &&
+    gooseToLocal.get(previousEntry.gooseSessionId) === sessionId
+  ) {
+    gooseToLocal.delete(previousEntry.gooseSessionId);
+  }
+
   prepared.set(sessionId, entry);
   gooseToLocal.set(gooseSessionId, sessionId);
   notifySessionRegistered(sessionId, gooseSessionId);
+
+  return () => {
+    prepared.delete(sessionId);
+    if (previousEntry) {
+      prepared.set(sessionId, previousEntry);
+    }
+
+    restoreGooseRegistration(gooseSessionId, previousGooseSessionLocal);
+    if (previousEntry && previousEntry.gooseSessionId !== gooseSessionId) {
+      restoreGooseRegistration(
+        previousEntry.gooseSessionId,
+        previousSessionGooseLocal,
+      );
+    }
+  };
 }
 
 export function unregisterSession(
