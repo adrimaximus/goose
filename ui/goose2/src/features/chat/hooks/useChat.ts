@@ -129,6 +129,7 @@ export function useChat(
       text: string,
       overridePersona?: { id: string; name?: string },
       attachments?: ChatAttachmentDraft[],
+      truncateBeforeMessageId?: string,
     ) => {
       const images = buildAcpImages(attachments);
       const hasAttachments = (attachments?.length ?? 0) > 0;
@@ -242,6 +243,7 @@ export function useChat(
           images: images?.map(
             (img) => [img.base64, img.mimeType] as [string, string],
           ),
+          truncateBeforeMessageId,
         });
 
         store.setChatState(sessionId, "idle");
@@ -371,7 +373,9 @@ export function useChat(
       // Bail if there's nothing to re-send — don't truncate
       if (!hasContent) return;
 
-      // Truncate from the user message onward (removes user msg + all responses)
+      // Truncate locally for immediate UI feedback; the backend truncates
+      // via _meta.truncate_before_message_id on the PromptRequest.
+      const truncateMessageId = userMessage.id;
       store.setMessages(sessionId, sessionMessages.slice(0, truncateFromIndex));
 
       const targetPersonaId = userMessage.metadata?.targetPersonaId;
@@ -382,6 +386,7 @@ export function useChat(
           ? { id: targetPersonaId, name: targetPersonaName }
           : undefined,
         attachmentDrafts.length > 0 ? attachmentDrafts : undefined,
+        truncateMessageId,
       );
     },
     [sessionId, store, sendMessage, chatState],

@@ -1,5 +1,4 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
-import { flushSync } from "react-dom";
 import { useTranslation } from "react-i18next";
 import { AnimatePresence } from "motion/react";
 import { MessageTimeline } from "./MessageTimeline";
@@ -360,9 +359,7 @@ export function ChatView({
   // Unified deferred send — a single ref + effect drains any pending send
   // that had to wait for a state update (persona switch or edit truncation).
   const pendingSend = useRef<{
-    reason: "persona" | "edit";
     text: string;
-    persona?: { id: string; name?: string };
     attachments?: ChatAttachmentDraft[];
   } | null>(null);
   const queue = useMessageQueue(activeSessionId, chatState, sendMessage);
@@ -389,7 +386,7 @@ export function ChatView({
         }
         handlePersonaChange(personaId);
         // Defer the send until after persona state updates
-        pendingSend.current = { reason: "persona", text, attachments };
+        pendingSend.current = { text, attachments };
         return;
       }
       // Queue if agent is busy and no message already queued
@@ -413,52 +410,77 @@ export function ChatView({
   );
 
   /** Save an inline edit: truncate history from the edited message onward, then send the new text. */
+  /** Save an inline edit: truncate locally for instant UI feedback, then
+   *  send with truncation metadata so the backend also rewinds both the
+   *  display log and LLM context.
+   *
+   *  When the user edits while streaming, stopStreaming() sets chatState
+   *  to "idle" in the store, but sendMessage's closure still captures the
+   *  stale "streaming" value and silently bails. We defer the send into a
+   *  ref so the next render — which carries the fresh "idle" chatState and
+   *  a new sendMessage — picks it up via the useEffect below. */
+  const pendingEditSend = useRef<{
+    text: string;
+    truncateMessageId: string;
+    persona?: { id: string; name?: string };
+    attachments?: ChatAttachmentDraft[];
+  } | null>(null);
   const handleSaveEdit = useCallback(
     (messageId: string, text: string) => {
-      if (chatState !== "idle") {
+      const wasIdle = chatState === "idle";
+      if (!wasIdle) {
         stopStreaming();
       }
       const store = useChatStore.getState();
       const allMessages = store.messagesBySession[activeSessionId] ?? [];
       const editIndex = allMessages.findIndex((m) => m.id === messageId);
       if (editIndex === -1) {
-        // Message vanished — bail to avoid appending to untruncated history
         store.setEditingMessageId(activeSessionId, null);
         return;
       }
-      // Preserve persona and attachments from the original message
       const originalMessage = allMessages[editIndex];
       const targetPersonaId = originalMessage.metadata?.targetPersonaId;
       const targetPersonaName = originalMessage.metadata?.targetPersonaName;
       const originalAttachments = rebuildAttachmentDrafts(originalMessage);
+      const persona = targetPersonaId
+        ? { id: targetPersonaId, name: targetPersonaName }
+        : undefined;
+      const attachments =
+        originalAttachments.length > 0 ? originalAttachments : undefined;
 
-      // Use flushSync to commit state updates synchronously so we can call
-      // sendMessage immediately — no timing gap, no race condition.
-      flushSync(() => {
-        store.setMessages(activeSessionId, allMessages.slice(0, editIndex));
-        store.setEditingMessageId(activeSessionId, null);
-        store.setChatState(activeSessionId, "idle");
-      });
+      // Local truncation for immediate UI feedback.
+      store.setMessages(activeSessionId, allMessages.slice(0, editIndex));
+      store.setEditingMessageId(activeSessionId, null);
+      store.setChatState(activeSessionId, "idle");
 
-      sendMessage(
-        text,
-        targetPersonaId
-          ? { id: targetPersonaId, name: targetPersonaName }
-          : undefined,
-        originalAttachments.length > 0 ? originalAttachments : undefined,
-      );
+      if (wasIdle) {
+        // chatState was already "idle" — sendMessage's closure is fresh.
+        sendMessage(text, persona, attachments, messageId);
+      } else {
+        // Defer until React re-renders with fresh chatState / sendMessage.
+        pendingEditSend.current = {
+          text,
+          truncateMessageId: messageId,
+          persona,
+          attachments,
+        };
+      }
     },
     [activeSessionId, chatState, stopStreaming, sendMessage],
   );
 
-  // Single drain effect for deferred sends (persona switch path only now —
-  // edit path uses flushSync and calls sendMessage synchronously).
   useEffect(() => {
-    if (
-      pendingSend.current &&
-      pendingSend.current.reason === "persona" &&
-      selectedPersona
-    ) {
+    if (pendingEditSend.current && chatState === "idle") {
+      const { text, truncateMessageId, persona, attachments } =
+        pendingEditSend.current;
+      pendingEditSend.current = null;
+      sendMessage(text, persona, attachments, truncateMessageId);
+    }
+  }, [chatState, sendMessage]);
+
+  // Drain deferred sends (persona switch only).
+  useEffect(() => {
+    if (pendingSend.current && selectedPersona) {
       const { text, attachments } = pendingSend.current;
       pendingSend.current = null;
       sendMessage(text, undefined, attachments);

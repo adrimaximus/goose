@@ -18,6 +18,10 @@ export interface AcpSendMessageOptions {
   personaName?: string;
   /** Image attachments as [base64Data, mimeType] pairs. */
   images?: [string, string][];
+  /** When set, the backend truncates this message and all subsequent messages
+   *  from both the display log and LLM context before appending the new prompt.
+   *  Used by edit and retry to rewind the conversation. */
+  truncateBeforeMessageId?: string;
 }
 
 export interface AcpPrepareSessionOptions {
@@ -36,7 +40,7 @@ export async function acpSendMessage(
   prompt: string,
   options: AcpSendMessageOptions = {},
 ): Promise<void> {
-  const { systemPrompt, personaId, images } = options;
+  const { systemPrompt, personaId, images, truncateBeforeMessageId } = options;
 
   const gooseSessionId = sessionTracker.getGooseSessionId(sessionId, personaId);
   if (!gooseSessionId) {
@@ -55,10 +59,14 @@ export async function acpSendMessage(
     }
   }
 
+  const meta = truncateBeforeMessageId
+    ? { truncate_before_message_id: truncateBeforeMessageId }
+    : undefined;
+
   const messageId = crypto.randomUUID();
   setActiveMessageId(gooseSessionId, messageId);
 
-  await directAcp.prompt(gooseSessionId, content);
+  await directAcp.prompt(gooseSessionId, content, meta);
 
   clearActiveMessageId(gooseSessionId);
 }
