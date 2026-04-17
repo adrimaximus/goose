@@ -457,11 +457,9 @@ export function ChatView({
       store.setChatState(activeSessionId, "idle");
 
       if (wasIdle) {
-        try {
-          sendMessage(text, persona, attachments, messageId);
-        } catch {
+        sendMessage(text, persona, attachments, messageId).catch(() => {
           store.setMessages(activeSessionId, snapshot);
-        }
+        });
       } else {
         pendingEditSend.current = {
           text,
@@ -480,11 +478,9 @@ export function ChatView({
       const { text, truncateMessageId, persona, attachments, snapshot } =
         pendingEditSend.current;
       pendingEditSend.current = null;
-      try {
-        sendMessage(text, persona, attachments, truncateMessageId);
-      } catch {
+      sendMessage(text, persona, attachments, truncateMessageId).catch(() => {
         useChatStore.getState().setMessages(activeSessionId, snapshot);
-      }
+      });
     }
   }, [chatState, sendMessage, activeSessionId]);
 
