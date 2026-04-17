@@ -22,30 +22,34 @@ import { perfLog } from "@/shared/lib/perfLog";
 
 // Pre-set message ID for the next live stream per goose session
 const presetMessageIds = new Map<string, string>();
-const pendingSessionUpdates = new Map<string, SessionUpdate[]>();
+const pendingUsageUpdates = new Map<string, SessionUpdate[]>();
 
-function queuePendingSessionUpdate(
+function shouldBufferPendingUpdate(update: SessionUpdate): boolean {
+  return update.sessionUpdate === "usage_update";
+}
+
+function queuePendingUsageUpdate(
   gooseSessionId: string,
   update: SessionUpdate,
 ): void {
-  const pending = pendingSessionUpdates.get(gooseSessionId);
+  const pending = pendingUsageUpdates.get(gooseSessionId);
   if (pending) {
     pending.push(update);
     return;
   }
-  pendingSessionUpdates.set(gooseSessionId, [update]);
+  pendingUsageUpdates.set(gooseSessionId, [update]);
 }
 
-function flushPendingSessionUpdates(
+function flushPendingUsageUpdates(
   localSessionId: string,
   gooseSessionId: string,
 ): void {
-  const pending = pendingSessionUpdates.get(gooseSessionId);
+  const pending = pendingUsageUpdates.get(gooseSessionId);
   if (!pending?.length) {
     return;
   }
 
-  pendingSessionUpdates.delete(gooseSessionId);
+  pendingUsageUpdates.delete(gooseSessionId);
 
   for (const update of pending) {
     if (useChatStore.getState().loadingSessionIds.has(localSessionId)) {
@@ -57,7 +61,7 @@ function flushPendingSessionUpdates(
 }
 
 subscribeToSessionRegistration((localSessionId, gooseSessionId) => {
-  flushPendingSessionUpdates(localSessionId, gooseSessionId);
+  flushPendingUsageUpdates(localSessionId, gooseSessionId);
 });
 
 // Per-session perf counters for replay/live streaming.
@@ -111,7 +115,9 @@ export async function handleSessionNotification(
   const localSessionId = getLocalSessionId(gooseSessionId);
 
   if (!localSessionId) {
-    queuePendingSessionUpdate(gooseSessionId, update);
+    if (shouldBufferPendingUpdate(update)) {
+      queuePendingUsageUpdate(gooseSessionId, update);
+    }
     return;
   }
 
