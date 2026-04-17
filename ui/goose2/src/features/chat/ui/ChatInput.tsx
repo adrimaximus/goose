@@ -122,6 +122,8 @@ export function ChatInput({
     }
   }, []);
 
+  const hasQueuedMessage = queuedMessage !== null;
+
   const dictation = useVoiceDictation({
     text,
     setText,
@@ -130,6 +132,7 @@ export function ChatInput({
     selectedPersonaId,
     onSend,
     resetTextarea,
+    isSendLocked: hasQueuedMessage || disabled,
   });
 
   const activePersona = useMemo(
@@ -144,7 +147,6 @@ export function ChatInput({
   );
   const stickyPersona = activePersona;
 
-  const hasQueuedMessage = queuedMessage !== null;
   const canSend =
     (text.trim().length > 0 || attachments.length > 0) &&
     !hasQueuedMessage &&
