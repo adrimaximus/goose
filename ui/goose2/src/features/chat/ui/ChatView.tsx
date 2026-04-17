@@ -53,7 +53,6 @@ export function ChatView({
   const { t } = useTranslation("chat");
   const activeSessionId = sessionId;
   const mountStart = useRef(performance.now());
-  // biome-ignore lint/correctness/useExhaustiveDependencies: log once on mount per session
   useEffect(() => {
     const ms = (performance.now() - mountStart.current).toFixed(1);
     perfLog(`[perf:chatview] ${sessionId.slice(0, 8)} mounted in ${ms}ms`);
