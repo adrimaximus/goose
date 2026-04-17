@@ -83,7 +83,7 @@ export function useChat(
   providerOverride?: string,
   systemPromptOverride?: string,
   personaInfo?: { id: string; name: string },
-  workingDirOverride?: string,
+  getWorkingDir?: () => Promise<string | undefined>,
 ) {
   const store = useChatStore();
   const abortRef = useRef<AbortController | null>(null);
@@ -218,8 +218,11 @@ export function useChat(
 
       try {
         if (wasDraft || selectedModelId) {
-          await acpPrepareSession(sessionId, providerId, {
-            workingDir: workingDirOverride,
+          const workingDir = await getWorkingDir?.();
+          if (!workingDir) {
+            throw new Error("Missing session working directory");
+          }
+          await acpPrepareSession(sessionId, providerId, workingDir, {
             personaId: effectivePersonaInfo?.id,
           });
           if (selectedModelId) {
@@ -227,8 +230,6 @@ export function useChat(
           }
         }
 
-        // Send via ACP — response streams back through Tauri events
-        // which are handled by the global useAcpStream listener in AppShell.
         store.setChatState(sessionId, "streaming");
         // When images are present with no text, pass a single space so the ACP
         // driver doesn't send an empty text content block that goose rejects.
@@ -236,9 +237,8 @@ export function useChat(
           buildAttachmentPromptPreamble(attachments);
         const promptBody = text.trim() || (images?.length ? " " : text);
         const acpPrompt = `${attachmentPromptPreamble}${promptBody}`;
-        await acpSendMessage(sessionId, providerId, acpPrompt, {
+        await acpSendMessage(sessionId, acpPrompt, {
           systemPrompt,
-          workingDir: workingDirOverride,
           personaId: effectivePersonaInfo?.id,
           personaName: effectivePersonaInfo?.name,
           images: images?.map(
@@ -302,7 +302,7 @@ export function useChat(
       providerOverride,
       systemPromptOverride,
       resolvePersonaInfo,
-      workingDirOverride,
+      getWorkingDir,
     ],
   );
 

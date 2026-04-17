@@ -8,10 +8,13 @@ Goose2 is a Tauri 2 + React 19 desktop app.
    bash/zsh: `source ./bin/activate-hermit`
    fish: `source ./bin/activate-hermit.fish`
 2. Install git hooks: `lefthook install`
-3. Install dependencies: `just setup`
+3. Prepare workspace dependencies: `just setup`
 4. Start the app: `just dev`
 
 `just clean` removes Rust build artifacts, `dist`, and `node_modules`. Run `just setup` again before `just dev`.
+
+`just setup` installs UI workspace dependencies, builds the SDK package, and builds the local debug `goose` CLI binary. `just dev` exports `GOOSE_BIN` to that local binary and loads `src-tauri/tauri.dev.conf.json`, which clears the production `externalBin` requirement during development.
+
 
 Run `just` to list available commands, or see [justfile](./justfile) for the full recipe definitions.
 
