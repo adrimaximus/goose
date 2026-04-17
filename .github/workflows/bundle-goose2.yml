@@ -4,6 +4,10 @@
 # The justfile recipe is: `just bundle`  →  `pnpm tauri build`
 #
 # Called from release.yml, canary.yml, or manually via bundle-goose2-manual.yml.
+#
+# The goose CLI binary can either be built from source (default) or pulled
+# from a prior build-cli.yml run by passing `cli-run-id`. This avoids
+# redundant ~20min Rust builds during release pipelines.
 name: "Bundle Goose 2 Desktop"
 
 on:
@@ -34,6 +38,13 @@ on:
         required: false
         default: ""
         type: string
+      cli-run-id:
+        description: >
+          Run ID of a prior build-cli.yml workflow run to download the goose
+          binary from. When empty, the goose CLI is built from source.
+        required: false
+        default: ""
+        type: string
 
 jobs:
   # ───────────────────────────────────────────────
@@ -49,6 +60,7 @@ jobs:
     permissions:
       id-token: write
       contents: read
+      actions: read
     outputs:
       artifact-url: ${{ steps.upload.outputs.artifact-url }}
     steps:
@@ -57,11 +69,13 @@ jobs:
           INPUT_REF: ${{ inputs.ref }}
           INPUT_VERSION: ${{ inputs.version }}
           INPUT_SIGNING: ${{ inputs.signing }}
+          INPUT_CLI_RUN_ID: ${{ inputs.cli-run-id }}
         run: |
           echo "=== Goose 2 Bundle (macOS ARM64) ==="
           echo "Ref: ${INPUT_REF:-<default>}"
           echo "Version: ${INPUT_VERSION:-<from Cargo.toml>}"
           echo "Signing: ${INPUT_SIGNING}"
+          echo "CLI run ID: ${INPUT_CLI_RUN_ID:-<build from source>}"
           df -h
 
       - name: Checkout code
@@ -83,26 +97,48 @@ jobs:
           sed -i.bak "s/^version = \".*\"/version = \"${VERSION}\"/" ui/goose2/src-tauri/Cargo.toml
           rm -f ui/goose2/src-tauri/Cargo.toml.bak
 
-          # Tauri conf
+          # package.json
           source ./bin/activate-hermit
           cd ui/goose2
           npm pkg set "version=${VERSION}"
 
-      # ── Rust: build the goose CLI binary ──
+      # ── Goose CLI: download from prior run OR build from source ──
+      - name: Download goose CLI from build-cli run
+        if: inputs.cli-run-id != ''
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7.0.0
+        with:
+          name: goose-aarch64-apple-darwin
+          run-id: ${{ inputs.cli-run-id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: cli-artifact
+
+      - name: Extract downloaded goose CLI
+        if: inputs.cli-run-id != ''
+        run: |
+          TRIPLE="aarch64-apple-darwin"
+          mkdir -p target/release
+          # The artifact contains goose-<triple>.tar.bz2 with goose inside
+          tar -xjf "cli-artifact/goose-${TRIPLE}.tar.bz2" -C target/release/
+          chmod +x target/release/goose
+          cp target/release/goose "target/release/goose-${TRIPLE}"
+          ls -lh "target/release/goose-${TRIPLE}"
+
       - name: Cache Rust dependencies
+        if: inputs.cli-run-id == ''
         uses: Swatinem/rust-cache@v2
         with:
           key: goose2-macos-arm64
 
       - name: Build goose CLI (release)
+        if: inputs.cli-run-id == ''
         run: |
           source ./bin/activate-hermit
           cargo build --release -p goose-cli --bin goose
 
-      - name: Verify goose binary
+      - name: Prepare goose binary with target triple
+        if: inputs.cli-run-id == ''
         run: |
           TRIPLE=$(rustc --print host-tuple)
-          # Tauri externalBin appends the target triple
           cp target/release/goose "target/release/goose-${TRIPLE}"
           ls -lh "target/release/goose-${TRIPLE}"
 
@@ -213,6 +249,7 @@ jobs:
     permissions:
       id-token: write
       contents: read
+      actions: read
     steps:
       - name: Checkout code
         uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
@@ -232,32 +269,61 @@ jobs:
           cd ui/goose2
           npm pkg set "version=${VERSION}"
 
-      # ── Rust: cross-compile goose CLI for Intel ──
+      # ── Goose CLI: download from prior run OR build from source ──
+      - name: Download goose CLI from build-cli run
+        if: inputs.cli-run-id != ''
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7.0.0
+        with:
+          name: goose-x86_64-apple-darwin
+          run-id: ${{ inputs.cli-run-id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: cli-artifact
+
+      - name: Extract downloaded goose CLI
+        if: inputs.cli-run-id != ''
+        run: |
+          TARGET="x86_64-apple-darwin"
+          mkdir -p target/release
+          tar -xjf "cli-artifact/goose-${TARGET}.tar.bz2" -C target/release/
+          chmod +x target/release/goose
+          cp target/release/goose "target/release/goose-${TARGET}"
+          ls -lh "target/release/goose-${TARGET}"
+
       - name: Cache Rust dependencies
+        if: inputs.cli-run-id == ''
         uses: Swatinem/rust-cache@v2
         with:
           key: goose2-macos-x86_64
 
       - name: Install Intel target for both toolchains
+        if: inputs.cli-run-id == ''
         run: |
           source ./bin/activate-hermit
-          # Root toolchain (used by workspace cargo build)
           rustup target add x86_64-apple-darwin
-          # Tauri toolchain (ui/goose2 has its own rust-toolchain.toml)
           cd ui/goose2/src-tauri
           rustup target add x86_64-apple-darwin
 
       - name: Build goose CLI for Intel (x86_64-apple-darwin)
+        if: inputs.cli-run-id == ''
         run: |
           source ./bin/activate-hermit
           cargo build --release -p goose-cli --bin goose --target x86_64-apple-darwin
 
       - name: Prepare goose binary with target triple
+        if: inputs.cli-run-id == ''
         run: |
           TARGET="x86_64-apple-darwin"
           mkdir -p target/release
           cp "target/${TARGET}/release/goose" "target/release/goose-${TARGET}"
           ls -lh "target/release/goose-${TARGET}"
+
+      # ── Intel target still needed for Tauri's own Rust build ──
+      - name: Install Intel target for Tauri toolchain
+        run: |
+          source ./bin/activate-hermit
+          rustup target add x86_64-apple-darwin
+          cd ui/goose2/src-tauri
+          rustup target add x86_64-apple-darwin
 
       # ── Frontend ──
       - name: Cache pnpm dependencies
@@ -357,6 +423,7 @@ jobs:
     timeout-minutes: 60
     permissions:
       contents: read
+      actions: read
     steps:
       - name: Checkout code
         uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
@@ -388,18 +455,40 @@ jobs:
           cd ui/goose2
           npm pkg set "version=${VERSION}"
 
-      # ── Rust ──
+      # ── Goose CLI: download from prior run OR build from source ──
+      - name: Download goose CLI from build-cli run
+        if: inputs.cli-run-id != ''
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7.0.0
+        with:
+          name: goose-x86_64-unknown-linux-gnu
+          run-id: ${{ inputs.cli-run-id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: cli-artifact
+
+      - name: Extract downloaded goose CLI
+        if: inputs.cli-run-id != ''
+        run: |
+          TRIPLE="x86_64-unknown-linux-gnu"
+          mkdir -p target/release
+          tar -xjf "cli-artifact/goose-${TRIPLE}.tar.bz2" -C target/release/
+          chmod +x target/release/goose
+          cp target/release/goose "target/release/goose-${TRIPLE}"
+          ls -lh "target/release/goose-${TRIPLE}"
+
       - name: Cache Rust dependencies
+        if: inputs.cli-run-id == ''
         uses: Swatinem/rust-cache@v2
         with:
           key: goose2-linux-x86_64
 
       - name: Build goose CLI (release)
+        if: inputs.cli-run-id == ''
         run: |
           source ./bin/activate-hermit
           cargo build --release -p goose-cli --bin goose
 
       - name: Prepare goose binary with target triple
+        if: inputs.cli-run-id == ''
         run: |
           TRIPLE=$(rustc --print host-tuple)
           cp target/release/goose "target/release/goose-${TRIPLE}"
