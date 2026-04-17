@@ -416,7 +416,10 @@ export function useChat(
   }, [sessionId, store]);
 
   const compactConversation = useCallback(async () => {
-    if (chatState !== "idle") {
+    const currentChatState = useChatStore
+      .getState()
+      .getSessionRuntime(sessionId).chatState;
+    if (currentChatState !== "idle") {
       return;
     }
 
@@ -481,7 +484,7 @@ export function useChat(
       store.setPendingAssistantProvider(sessionId, null);
       store.setSessionLoading(sessionId, false);
     }
-  }, [chatState, resolvePersonaInfo, sessionId, store, workingDirOverride]);
+  }, [resolvePersonaInfo, sessionId, store, workingDirOverride]);
 
   const stopStreaming = stopGeneration;
 
