@@ -58,9 +58,12 @@ export async function acpSendMessage(
   const messageId = crypto.randomUUID();
   setActiveMessageId(gooseSessionId, messageId);
 
-  await directAcp.prompt(gooseSessionId, content);
-
-  clearActiveMessageId(gooseSessionId);
+  try {
+    await directAcp.prompt(gooseSessionId, content);
+  } catch (error) {
+    clearActiveMessageId(gooseSessionId);
+    throw error;
+  }
 }
 
 /** Prepare or warm an ACP session ahead of the first prompt. */
