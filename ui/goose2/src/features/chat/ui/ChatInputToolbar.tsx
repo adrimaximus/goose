@@ -334,7 +334,7 @@ export function ChatInputToolbar({
                   </div>
                   <Button
                     type="button"
-                    variant="outline-flat"
+                    variant="secondary"
                     size="xs"
                     className="mt-2 w-full justify-center"
                     onClick={handleCompactContext}
