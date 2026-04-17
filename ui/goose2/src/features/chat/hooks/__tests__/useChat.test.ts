@@ -509,6 +509,52 @@ describe("useChat", () => {
     );
   });
 
+  it("blocks new sends while compaction is in flight", async () => {
+    mockGetGooseSessionId.mockReturnValue("goose-session-1");
+    const compactDeferred = createDeferredPromise();
+    mockAcpSendMessage.mockImplementation((_sessionId: string, prompt: string) =>
+      prompt === "/compact" ? compactDeferred.promise : Promise.resolve(),
+    );
+
+    const { result } = renderHook(() => useChat("session-1"));
+
+    let compactPromise!: Promise<void>;
+    await act(async () => {
+      compactPromise = result.current.compactConversation();
+      await Promise.resolve();
+    });
+
+    expect(useChatStore.getState().getSessionRuntime("session-1").chatState).toBe(
+      "compacting",
+    );
+
+    await act(async () => {
+      await result.current.sendMessage("Hello during compact");
+    });
+
+    expect(mockAcpSendMessage).toHaveBeenCalledTimes(1);
+    expect(mockAcpSendMessage).toHaveBeenCalledWith(
+      "session-1",
+      "/compact",
+      undefined,
+    );
+    expect(
+      useChatStore.getState().messagesBySession["session-1"],
+    ).toBeUndefined();
+    expect(useChatStore.getState().getSessionRuntime("session-1").chatState).toBe(
+      "compacting",
+    );
+
+    compactDeferred.resolve();
+    await act(async () => {
+      await compactPromise;
+    });
+
+    expect(useChatStore.getState().getSessionRuntime("session-1").chatState).toBe(
+      "idle",
+    );
+  });
+
   it("surfaces an error when compacting before the session is prepared", async () => {
     const { result } = renderHook(() => useChat("session-1"));
 

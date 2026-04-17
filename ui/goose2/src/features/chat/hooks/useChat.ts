@@ -158,10 +158,14 @@ export function useChat(
       const tSendStart = performance.now();
       const images = buildAcpImages(attachments);
       const hasAttachments = (attachments?.length ?? 0) > 0;
+      const currentChatState = useChatStore
+        .getState()
+        .getSessionRuntime(sessionId).chatState;
       if (
         (!text.trim() && !hasAttachments) ||
-        chatState === "streaming" ||
-        chatState === "thinking"
+        currentChatState === "streaming" ||
+        currentChatState === "thinking" ||
+        currentChatState === "compacting"
       )
         return;
       perfLog(
@@ -342,7 +346,6 @@ export function useChat(
     },
     [
       sessionId,
-      chatState,
       store,
       providerOverride,
       systemPromptOverride,
