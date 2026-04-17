@@ -6,7 +6,7 @@ use fs_err as fs;
 use futures::future::BoxFuture;
 use goose::acp::{PermissionDecision, ACP_CURRENT_MODEL};
 use goose::agents::extension::{Envs, PLATFORM_EXTENSIONS};
-use goose::agents::mcp_client::McpClientTrait;
+use goose::agents::mcp_client::{GooseMcpHostInfo, McpClientTrait};
 use goose::agents::platform_extensions::developer::DeveloperClient;
 use goose::agents::{Agent, AgentConfig, ExtensionConfig, GoosePlatform, SessionConfig};
 use goose::builtin_extension::register_builtin_extensions;
@@ -47,6 +47,7 @@ use sacp::{
     Agent as SacpAgent, ByteStreams, Client, ConnectionTo, Dispatch, HandleDispatchFrom, Handled,
     Responder,
 };
+use serde::Deserialize;
 use std::collections::HashMap;
 use std::sync::Arc;
 use strum::{EnumMessage, VariantNames};
@@ -120,18 +121,66 @@ pub struct GooseAcpAgent {
     builtins: Vec<String>,
     client_fs_capabilities: OnceCell<FileSystemCapabilities>,
     client_terminal: OnceCell<bool>,
+    client_mcp_host_info: OnceCell<GooseMcpHostInfo>,
     config_dir: std::path::PathBuf,
     session_manager: Arc<SessionManager>,
     thread_manager: Arc<goose::session::ThreadManager>,
     permission_manager: Arc<PermissionManager>,
     goose_mode: GooseMode,
     disable_session_naming: bool,
+    goose_platform: GoosePlatform,
 }
 
 fn extract_timeout_from_meta(meta: &Option<Meta>) -> Option<u64> {
     meta.as_ref()
         .and_then(|m| m.get("timeout"))
         .and_then(|v| v.as_u64())
+}
+
+#[derive(Debug, Default, Deserialize)]
+struct GooseClientMetaEnvelope {
+    #[serde(default)]
+    goose: Option<GooseClientMeta>,
+}
+
+#[derive(Debug, Default, Deserialize)]
+struct GooseClientMeta {
+    #[serde(rename = "mcpHostCapabilities", default)]
+    mcp_host_capabilities: Option<GooseMcpHostCapabilities>,
+}
+
+#[derive(Debug, Default, Deserialize)]
+struct GooseMcpHostCapabilities {
+    #[serde(default)]
+    extensions: Option<rmcp::model::ExtensionCapabilities>,
+}
+
+fn extract_goose_client_meta(meta: &Meta) -> Option<GooseClientMetaEnvelope> {
+    serde_json::from_value(serde_json::Value::Object(meta.clone())).ok()
+}
+
+fn extract_client_mcp_host_info(args: &InitializeRequest) -> GooseMcpHostInfo {
+    let host_capabilities = args
+        .client_capabilities
+        .meta
+        .as_ref()
+        .and_then(extract_goose_client_meta)
+        .and_then(|meta| meta.goose)
+        .and_then(|goose| goose.mcp_host_capabilities);
+    let explicit_extensions = host_capabilities
+        .as_ref()
+        .and_then(|capabilities| capabilities.extensions.as_ref())
+        .is_some();
+    let extensions = host_capabilities
+        .and_then(|capabilities| capabilities.extensions)
+        .unwrap_or_default();
+
+    GooseMcpHostInfo {
+        explicit_extensions,
+        extensions,
+        client_name: args.client_info.as_ref().map(|info| info.name.clone()),
+        client_version: args.client_info.as_ref().map(|info| info.version.clone()),
+    }
 }
 
 fn mcp_server_to_extension_config(mcp_server: McpServer) -> Result<ExtensionConfig, String> {
@@ -608,6 +657,7 @@ impl GooseAcpAgent {
         config_dir: std::path::PathBuf,
         goose_mode: GooseMode,
         disable_session_naming: bool,
+        goose_platform: GoosePlatform,
     ) -> Result<Self> {
         let session_manager = Arc::new(SessionManager::new(data_dir));
         let thread_manager = Arc::new(goose::session::ThreadManager::new(
@@ -621,12 +671,14 @@ impl GooseAcpAgent {
             builtins,
             client_fs_capabilities: OnceCell::new(),
             client_terminal: OnceCell::new(),
+            client_mcp_host_info: OnceCell::new(),
             config_dir,
             session_manager,
             thread_manager,
             permission_manager,
             goose_mode,
             disable_session_naming,
+            goose_platform,
         })
     }
 
@@ -672,19 +724,24 @@ impl GooseAcpAgent {
             .cloned()
             .unwrap_or_default();
         let client_terminal = self.client_terminal.get().copied().unwrap_or(false);
+        let client_mcp_host_info = self.client_mcp_host_info.get().cloned();
         let provider_factory = Arc::clone(&self.provider_factory);
         let disable_session_naming = self.disable_session_naming;
+        let goose_platform = self.goose_platform.clone();
 
         tokio::spawn(async move {
             let result: Result<(), String> = async {
-                let agent = Arc::new(Agent::with_config(AgentConfig::new(
-                    session_manager,
-                    permission_manager,
-                    None,
-                    goose_mode,
-                    disable_session_naming,
-                    GoosePlatform::GooseCli,
-                )));
+                let agent = Arc::new(Agent::with_config(
+                    AgentConfig::new(
+                        session_manager,
+                        permission_manager,
+                        None,
+                        goose_mode,
+                        disable_session_naming,
+                        goose_platform,
+                    )
+                    .with_mcp_host_info(client_mcp_host_info),
+                ));
 
                 let config_path = config_dir.join(CONFIG_YAML_NAME);
                 let mut extensions = Config::new(&config_path, "goose")
@@ -1236,6 +1293,9 @@ impl GooseAcpAgent {
             .client_fs_capabilities
             .set(args.client_capabilities.fs.clone());
         let _ = self.client_terminal.set(args.client_capabilities.terminal);
+        let _ = self
+            .client_mcp_host_info
+            .set(extract_client_mcp_host_info(&args));
 
         let capabilities = AgentCapabilities::new()
             .load_session(true)
@@ -2901,6 +2961,7 @@ pub async fn run(builtins: Vec<String>) -> Result<()> {
             builtins,
             data_dir: Paths::data_dir(),
             config_dir: Paths::config_dir(),
+            goose_platform: GoosePlatform::GooseCli,
         });
     let agent = server.create_agent().await?;
     serve(agent, incoming, outgoing).await
