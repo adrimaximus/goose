@@ -415,6 +415,86 @@ impl ThreadManager {
         Ok((result.rows_affected(), created_ts))
     }
 
+    /// Atomically truncate from a message and append a new one in a single
+    /// transaction. Also truncates the session `messages` table using the
+    /// timestamp bridge. Returns the stored message with its assigned ID.
+    pub async fn truncate_and_append(
+        &self,
+        thread_id: &str,
+        truncate_message_id: &str,
+        session_id: &str,
+        new_message: &Message,
+    ) -> Result<(Message, u64)> {
+        let pool = self.storage.pool().await?;
+        let mut tx = pool.begin_with("BEGIN IMMEDIATE").await?;
+
+        // 1. Find the target message in thread_messages
+        let row = sqlx::query_as::<_, (i64, i64)>(
+            "SELECT id, created_timestamp FROM thread_messages WHERE thread_id = ? AND message_id = ? LIMIT 1",
+        )
+        .bind(thread_id)
+        .bind(truncate_message_id)
+        .fetch_optional(&mut *tx)
+        .await?;
+
+        let mut rows_deleted = 0u64;
+
+        if let Some((row_id, created_ts)) = row {
+            // 2. Delete from thread_messages
+            let result =
+                sqlx::query("DELETE FROM thread_messages WHERE thread_id = ? AND id >= ?")
+                    .bind(thread_id)
+                    .bind(row_id)
+                    .execute(&mut *tx)
+                    .await?;
+            rows_deleted = result.rows_affected();
+
+            // 3. Delete from session messages using precise boundary
+            sqlx::query(
+                "DELETE FROM messages WHERE session_id = ? AND id >= \
+                 (SELECT id FROM messages WHERE session_id = ? AND created_timestamp >= ? ORDER BY id ASC LIMIT 1)",
+            )
+            .bind(session_id)
+            .bind(session_id)
+            .bind(created_ts)
+            .execute(&mut *tx)
+            .await?;
+        }
+
+        // 4. Append the new message
+        let role_str = role_to_string(&new_message.role);
+        let content_json = serde_json::to_string(&new_message.content)?;
+        let metadata_json = serde_json::to_string(&new_message.metadata)?;
+        let message_id = new_message
+            .id
+            .clone()
+            .unwrap_or_else(|| format!("tmsg_{}", uuid::Uuid::new_v4()));
+
+        sqlx::query(
+            "INSERT INTO thread_messages (thread_id, session_id, message_id, role, content_json, created_timestamp, metadata_json) VALUES (?, ?, ?, ?, ?, ?, ?)",
+        )
+        .bind(thread_id)
+        .bind(session_id)
+        .bind(&message_id)
+        .bind(role_str)
+        .bind(&content_json)
+        .bind(new_message.created)
+        .bind(&metadata_json)
+        .execute(&mut *tx)
+        .await?;
+
+        sqlx::query("UPDATE threads SET updated_at = CURRENT_TIMESTAMP WHERE id = ?")
+            .bind(thread_id)
+            .execute(&mut *tx)
+            .await?;
+
+        tx.commit().await?;
+
+        let mut stored = new_message.clone();
+        stored.id = Some(message_id);
+        Ok((stored, rows_deleted))
+    }
+
     pub async fn list_messages(&self, thread_id: &str) -> Result<Vec<Message>> {
         let pool = self.storage.pool().await?;
         let rows = sqlx::query_as::<_, (Option<String>, String, Option<String>, String, i64, String)>(

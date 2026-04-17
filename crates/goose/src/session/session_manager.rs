@@ -1590,11 +1590,17 @@ impl SessionStorage {
 
     async fn truncate_conversation(&self, session_id: &str, timestamp: i64) -> Result<()> {
         let pool = self.pool().await?;
-        sqlx::query("DELETE FROM messages WHERE session_id = ? AND created_timestamp >= ?")
-            .bind(session_id)
-            .bind(timestamp)
-            .execute(pool)
-            .await?;
+        // Use autoincrement id for precise ordering — timestamps have only
+        // second resolution and multiple messages can share the same second.
+        sqlx::query(
+            "DELETE FROM messages WHERE session_id = ? AND id >= \
+             (SELECT id FROM messages WHERE session_id = ? AND created_timestamp >= ? ORDER BY id ASC LIMIT 1)",
+        )
+        .bind(session_id)
+        .bind(session_id)
+        .bind(timestamp)
+        .execute(pool)
+        .await?;
 
         Ok(())
     }

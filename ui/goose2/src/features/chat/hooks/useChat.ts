@@ -373,21 +373,25 @@ export function useChat(
       // Bail if there's nothing to re-send — don't truncate
       if (!hasContent) return;
 
-      // Truncate locally for immediate UI feedback; the backend truncates
-      // via _meta.truncate_before_message_id on the PromptRequest.
+      // Optimistic local truncation — snapshot first for rollback on failure.
+      const snapshot = [...sessionMessages];
       const truncateMessageId = userMessage.id;
       store.setMessages(sessionId, sessionMessages.slice(0, truncateFromIndex));
 
       const targetPersonaId = userMessage.metadata?.targetPersonaId;
       const targetPersonaName = userMessage.metadata?.targetPersonaName;
-      await sendMessage(
-        text,
-        targetPersonaId
-          ? { id: targetPersonaId, name: targetPersonaName }
-          : undefined,
-        attachmentDrafts.length > 0 ? attachmentDrafts : undefined,
-        truncateMessageId,
-      );
+      try {
+        await sendMessage(
+          text,
+          targetPersonaId
+            ? { id: targetPersonaId, name: targetPersonaName }
+            : undefined,
+          attachmentDrafts.length > 0 ? attachmentDrafts : undefined,
+          truncateMessageId,
+        );
+      } catch {
+        store.setMessages(sessionId, snapshot);
+      }
     },
     [sessionId, store, sendMessage, chatState],
   );

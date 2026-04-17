@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { AnimatePresence } from "motion/react";
 import { MessageTimeline } from "./MessageTimeline";
 import { ChatInput } from "./ChatInput";
-import type { ChatAttachmentDraft } from "@/shared/types/messages";
+import type { ChatAttachmentDraft, Message } from "@/shared/types/messages";
 import { LoadingGoose } from "./LoadingGoose";
 import { ChatLoadingSkeleton } from "./ChatLoadingSkeleton";
 import { useChat } from "../hooks/useChat";
@@ -424,6 +424,7 @@ export function ChatView({
     truncateMessageId: string;
     persona?: { id: string; name?: string };
     attachments?: ChatAttachmentDraft[];
+    snapshot: Message[];
   } | null>(null);
   const handleSaveEdit = useCallback(
     (messageId: string, text: string) => {
@@ -448,24 +449,26 @@ export function ChatView({
       const attachments =
         originalAttachments.length > 0 ? originalAttachments : undefined;
 
-      // Local truncation for immediate UI feedback.
+      // Snapshot for rollback on failure, then optimistic local truncation.
+      const snapshot = [...allMessages];
       store.setMessages(activeSessionId, allMessages.slice(0, editIndex));
       store.setEditingMessageId(activeSessionId, null);
-      // Dismiss any queued follow-up before forcing idle — otherwise
-      // useMessageQueue would auto-send it against the truncated timeline.
       store.dismissQueuedMessage(activeSessionId);
       store.setChatState(activeSessionId, "idle");
 
       if (wasIdle) {
-        // chatState was already "idle" — sendMessage's closure is fresh.
-        sendMessage(text, persona, attachments, messageId);
+        try {
+          sendMessage(text, persona, attachments, messageId);
+        } catch {
+          store.setMessages(activeSessionId, snapshot);
+        }
       } else {
-        // Defer until React re-renders with fresh chatState / sendMessage.
         pendingEditSend.current = {
           text,
           truncateMessageId: messageId,
           persona,
           attachments,
+          snapshot,
         };
       }
     },
@@ -474,12 +477,16 @@ export function ChatView({
 
   useEffect(() => {
     if (pendingEditSend.current && chatState === "idle") {
-      const { text, truncateMessageId, persona, attachments } =
+      const { text, truncateMessageId, persona, attachments, snapshot } =
         pendingEditSend.current;
       pendingEditSend.current = null;
-      sendMessage(text, persona, attachments, truncateMessageId);
+      try {
+        sendMessage(text, persona, attachments, truncateMessageId);
+      } catch {
+        useChatStore.getState().setMessages(activeSessionId, snapshot);
+      }
     }
-  }, [chatState, sendMessage]);
+  }, [chatState, sendMessage, activeSessionId]);
 
   // Drain deferred sends (persona switch only).
   useEffect(() => {
