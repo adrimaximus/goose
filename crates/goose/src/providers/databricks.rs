@@ -271,6 +271,9 @@ impl DatabricksProvider {
     fn is_responses_model(model_name: &str) -> bool {
         let normalized = model_name.to_ascii_lowercase();
         normalized.contains("codex")
+            || normalized.starts_with("gpt-5-pro")
+            || normalized.starts_with("gpt-5.2-pro")
+            || normalized.starts_with("gpt-5.4")
     }
 
     fn get_endpoint_path(&self, model_name: &str, is_embedding: bool) -> String {
@@ -588,5 +591,67 @@ impl EmbeddingCapable for DatabricksProvider {
             .collect::<Result<Vec<Vec<f32>>>>()?;
 
         Ok(embeddings)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn gpt_5_4_is_responses_model() {
+        assert!(
+            DatabricksProvider::is_responses_model("gpt-5.4"),
+            "gpt-5.4 requires the Responses API — chat/completions rejects reasoning_effort with function tools"
+        );
+    }
+
+    #[test]
+    fn gpt_5_2_pro_is_responses_model() {
+        assert!(
+            DatabricksProvider::is_responses_model("gpt-5.2-pro"),
+            "gpt-5.2-pro requires the Responses API"
+        );
+    }
+
+    #[test]
+    fn codex_models_remain_responses_models() {
+        assert!(DatabricksProvider::is_responses_model("gpt-5-codex"));
+        assert!(DatabricksProvider::is_responses_model("gpt-5.1-codex"));
+    }
+
+    #[test]
+    fn gpt_5_pro_is_responses_model() {
+        assert!(
+            DatabricksProvider::is_responses_model("gpt-5-pro"),
+            "gpt-5-pro only supports the Responses API"
+        );
+    }
+
+    #[test]
+    fn gpt_5_4_mini_is_responses_model() {
+        assert!(DatabricksProvider::is_responses_model("gpt-5.4-mini"));
+    }
+
+    #[test]
+    fn gpt_5_4_nano_is_responses_model() {
+        assert!(DatabricksProvider::is_responses_model("gpt-5.4-nano"));
+    }
+
+    #[test]
+    fn gpt_5_4_pro_is_responses_model() {
+        assert!(DatabricksProvider::is_responses_model("gpt-5.4-pro"));
+    }
+
+    #[test]
+    fn non_responses_models_are_not_matched() {
+        assert!(!DatabricksProvider::is_responses_model("gpt-4o"));
+        assert!(!DatabricksProvider::is_responses_model("gpt-5"));
+        assert!(!DatabricksProvider::is_responses_model("gpt-5-mini"));
+        assert!(!DatabricksProvider::is_responses_model("gpt-5-nano"));
+        assert!(!DatabricksProvider::is_responses_model("gpt-5.1"));
+        assert!(!DatabricksProvider::is_responses_model("gpt-5.2"));
+        assert!(!DatabricksProvider::is_responses_model("o3-mini"));
+        assert!(!DatabricksProvider::is_responses_model("claude-sonnet-4"));
     }
 }

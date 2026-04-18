@@ -47,10 +47,20 @@ pub const OPEN_AI_KNOWN_MODELS: &[(&str, usize)] = &[
     ("gpt-3.5-turbo", 16_385),
     ("gpt-4-turbo", 128_000),
     ("o4-mini", 128_000),
+    ("gpt-5", 400_000),
+    ("gpt-5-mini", 400_000),
     ("gpt-5-nano", 400_000),
-    ("gpt-5.1-codex", 400_000),
+    ("gpt-5-pro", 400_000),
     ("gpt-5-codex", 400_000),
+    ("gpt-5.1", 400_000),
+    ("gpt-5.1-codex", 400_000),
+    ("gpt-5.2", 400_000),
+    ("gpt-5.2-codex", 400_000),
+    ("gpt-5.2-pro", 400_000),
     ("gpt-5.4", 400_000),
+    ("gpt-5.4-mini", 400_000),
+    ("gpt-5.4-nano", 128_000),
+    ("gpt-5.4-pro", 400_000),
 ];
 
 pub const OPEN_AI_DOC_URL: &str = "https://platform.openai.com/docs/models";
@@ -263,6 +273,7 @@ impl OpenAiProvider {
     fn is_responses_model(model_name: &str) -> bool {
         let normalized_model = model_name.to_ascii_lowercase();
         (normalized_model.starts_with("gpt-5") && normalized_model.contains("codex"))
+            || normalized_model.starts_with("gpt-5-pro")
             || normalized_model.starts_with("gpt-5.2-pro")
             || normalized_model.starts_with("gpt-5.4")
     }
@@ -852,11 +863,84 @@ mod tests {
     }
 
     #[test]
-    fn gpt_5_4_is_in_known_models() {
+    fn all_gpt5_variants_in_known_models() {
         let known: Vec<&str> = OPEN_AI_KNOWN_MODELS.iter().map(|(name, _)| *name).collect();
-        assert!(
-            known.contains(&"gpt-5.4"),
-            "gpt-5.4 should be in OPEN_AI_KNOWN_MODELS so it gets a proper context limit"
-        );
+        for model in &[
+            "gpt-5",
+            "gpt-5-mini",
+            "gpt-5-nano",
+            "gpt-5-pro",
+            "gpt-5-codex",
+            "gpt-5.1",
+            "gpt-5.1-codex",
+            "gpt-5.2",
+            "gpt-5.2-codex",
+            "gpt-5.2-pro",
+            "gpt-5.4",
+            "gpt-5.4-mini",
+            "gpt-5.4-nano",
+            "gpt-5.4-pro",
+        ] {
+            assert!(
+                known.contains(model),
+                "{model} should be in OPEN_AI_KNOWN_MODELS"
+            );
+        }
+    }
+
+    #[test]
+    fn gpt_5_pro_uses_responses() {
+        assert!(OpenAiProvider::should_use_responses_api(
+            "gpt-5-pro",
+            "v1/chat/completions"
+        ));
+    }
+
+    #[test]
+    fn gpt_5_pro_with_date_uses_responses() {
+        assert!(OpenAiProvider::should_use_responses_api(
+            "gpt-5-pro-2025-10-06",
+            "v1/chat/completions"
+        ));
+    }
+
+    #[test]
+    fn gpt_5_4_mini_uses_responses() {
+        assert!(OpenAiProvider::should_use_responses_api(
+            "gpt-5.4-mini",
+            "v1/chat/completions"
+        ));
+    }
+
+    #[test]
+    fn gpt_5_4_nano_uses_responses() {
+        assert!(OpenAiProvider::should_use_responses_api(
+            "gpt-5.4-nano",
+            "v1/chat/completions"
+        ));
+    }
+
+    #[test]
+    fn gpt_5_4_pro_uses_responses() {
+        assert!(OpenAiProvider::should_use_responses_api(
+            "gpt-5.4-pro",
+            "v1/chat/completions"
+        ));
+    }
+
+    #[test]
+    fn gpt_5_base_does_not_use_responses() {
+        assert!(!OpenAiProvider::should_use_responses_api(
+            "gpt-5",
+            "v1/chat/completions"
+        ));
+    }
+
+    #[test]
+    fn gpt_5_mini_does_not_use_responses() {
+        assert!(!OpenAiProvider::should_use_responses_api(
+            "gpt-5-mini",
+            "v1/chat/completions"
+        ));
     }
 }

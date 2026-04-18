@@ -587,7 +587,7 @@ pub fn create_request(
         let last_part = parts.last().unwrap();
 
         match *last_part {
-            "low" | "medium" | "high" => {
+            "none" | "low" | "medium" | "high" | "xhigh" => {
                 let base_name = parts[..parts.len() - 1].join("-");
                 (base_name, Some(last_part.to_string()))
             }
@@ -1070,6 +1070,44 @@ mod tests {
         };
         let request = create_request(&model_config, "system", &[], &[], &ImageFormat::OpenAi)?;
         assert_eq!(request["reasoning_effort"], "high");
+        Ok(())
+    }
+
+    #[test]
+    fn test_create_request_reasoning_effort_xhigh() -> anyhow::Result<()> {
+        let model_config = ModelConfig {
+            model_name: "o3-xhigh".to_string(),
+            context_limit: Some(4096),
+            temperature: None,
+            max_tokens: Some(1024),
+            toolshim: false,
+            toolshim_model: None,
+            fast_model_config: None,
+            request_params: None,
+            reasoning: None,
+        };
+        let request = create_request(&model_config, "system", &[], &[], &ImageFormat::OpenAi)?;
+        assert_eq!(request["model"], "o3");
+        assert_eq!(request["reasoning_effort"], "xhigh");
+        Ok(())
+    }
+
+    #[test]
+    fn test_create_request_reasoning_effort_none() -> anyhow::Result<()> {
+        let model_config = ModelConfig {
+            model_name: "o3-none".to_string(),
+            context_limit: Some(4096),
+            temperature: None,
+            max_tokens: Some(1024),
+            toolshim: false,
+            toolshim_model: None,
+            fast_model_config: None,
+            request_params: None,
+            reasoning: None,
+        };
+        let request = create_request(&model_config, "system", &[], &[], &ImageFormat::OpenAi)?;
+        assert_eq!(request["model"], "o3");
+        assert_eq!(request["reasoning_effort"], "none");
         Ok(())
     }
 

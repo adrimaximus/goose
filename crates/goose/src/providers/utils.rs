@@ -207,7 +207,7 @@ pub fn extract_reasoning_effort(model_name: &str) -> (String, Option<String>) {
     let parts: Vec<&str> = model_name.split('-').collect();
     let last_part = parts.last().unwrap();
     match *last_part {
-        "low" | "medium" | "high" => {
+        "none" | "low" | "medium" | "high" | "xhigh" => {
             let base_name = parts[..parts.len() - 1].join("-");
             (base_name, Some(last_part.to_string()))
         }
@@ -869,5 +869,40 @@ mod tests {
             parse_google_retry_delay(&payload),
             Some(Duration::from_secs(42))
         );
+    }
+
+    #[test]
+    fn test_extract_reasoning_effort_none() {
+        let (name, effort) = extract_reasoning_effort("o3-none");
+        assert_eq!(name, "o3");
+        assert_eq!(effort.as_deref(), Some("none"));
+    }
+
+    #[test]
+    fn test_extract_reasoning_effort_xhigh() {
+        let (name, effort) = extract_reasoning_effort("o3-xhigh");
+        assert_eq!(name, "o3");
+        assert_eq!(effort.as_deref(), Some("xhigh"));
+    }
+
+    #[test]
+    fn test_extract_reasoning_effort_low() {
+        let (name, effort) = extract_reasoning_effort("gpt-5-low");
+        assert_eq!(name, "gpt-5");
+        assert_eq!(effort.as_deref(), Some("low"));
+    }
+
+    #[test]
+    fn test_extract_reasoning_effort_default_medium() {
+        let (name, effort) = extract_reasoning_effort("gpt-5.4");
+        assert_eq!(name, "gpt-5.4");
+        assert_eq!(effort.as_deref(), Some("medium"));
+    }
+
+    #[test]
+    fn test_extract_reasoning_effort_non_reasoning_model() {
+        let (name, effort) = extract_reasoning_effort("gpt-4o");
+        assert_eq!(name, "gpt-4o");
+        assert_eq!(effort, None);
     }
 }
