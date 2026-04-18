@@ -175,7 +175,7 @@ export const ExpandedRenderer: React.FC<NavigationRendererProps> = ({
                             'w-full relative flex flex-col rounded-xl',
                             'transition-colors duration-200 aspect-square cursor-pointer shadow-sm hover:shadow-md',
                             active
-                              ? 'text-text-secondary bg-background-tertiary'
+                              ? 'text-text-secondary'
                               : 'font-medium text-text-primary bg-background-primary hover:bg-background-tertiary'
                           )}
                         >
@@ -238,7 +238,7 @@ export const ExpandedRenderer: React.FC<NavigationRendererProps> = ({
                     'w-full relative flex flex-col rounded-xl',
                     'transition-colors duration-200 aspect-square shadow-sm hover:shadow-md',
                     active
-                      ? 'text-text-secondary bg-background-tertiary'
+                      ? 'text-text-secondary'
                       : 'font-medium text-text-primary bg-background-primary hover:bg-background-tertiary'
                   )}
                 >

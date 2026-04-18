@@ -124,7 +124,7 @@ export const CondensedRenderer: React.FC<NavigationRendererProps> = ({
                             'rounded-lg transition-colors duration-200 no-drag',
                             'p-2.5',
                             active
-                              ? 'text-text-secondary bg-background-tertiary'
+                              ? 'text-text-secondary'
                               : 'text-text-primary hover:text-text-secondary'
                           )}
                         >
@@ -155,7 +155,7 @@ export const CondensedRenderer: React.FC<NavigationRendererProps> = ({
                               'relative rounded-lg transition-colors duration-200 no-drag',
                               'w-full p-3',
                               active
-                                ? 'text-text-secondary bg-background-tertiary'
+                                ? 'text-text-secondary'
                                 : 'text-text-primary hover:text-text-secondary'
                             )}
                           >
@@ -201,7 +201,7 @@ export const CondensedRenderer: React.FC<NavigationRendererProps> = ({
                             'relative rounded-lg transition-colors duration-200 no-drag',
                             isCondensedIconOnly ? 'justify-center p-2.5' : 'w-full p-3',
                             active
-                              ? 'text-text-secondary bg-background-tertiary'
+                              ? 'text-text-secondary'
                               : 'font-medium text-text-primary hover:text-text-secondary'
                           )}
                         >
@@ -298,7 +298,7 @@ export const CondensedRenderer: React.FC<NavigationRendererProps> = ({
                           'relative rounded-lg transition-colors duration-200 no-drag',
                           'px-3 py-2.5',
                           active
-                            ? 'text-text-secondary bg-background-tertiary'
+                            ? 'text-text-secondary'
                             : 'font-medium text-text-primary hover:text-text-secondary'
                         )}
                       >
@@ -328,7 +328,7 @@ export const CondensedRenderer: React.FC<NavigationRendererProps> = ({
                       'flex flex-row items-center gap-2 px-3 py-2.5',
                       'relative rounded-lg transition-colors duration-200 no-drag',
                       active
-                        ? 'text-text-secondary bg-background-tertiary'
+                        ? 'text-text-secondary'
                         : 'font-medium text-text-primary hover:text-text-secondary'
                     )}
                   >
