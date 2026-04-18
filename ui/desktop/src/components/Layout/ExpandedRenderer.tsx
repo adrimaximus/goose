@@ -175,8 +175,8 @@ export const ExpandedRenderer: React.FC<NavigationRendererProps> = ({
                             'w-full relative flex flex-col rounded-xl',
                             'transition-colors duration-200 aspect-square cursor-pointer shadow-sm hover:shadow-md',
                             active
-                              ? 'font-medium text-text-primary bg-background-primary hover:bg-background-tertiary'
-                              : 'text-text-secondary hover:text-text-primary bg-background-primary hover:bg-background-tertiary'
+                              ? 'text-text-secondary bg-background-tertiary'
+                              : 'font-medium text-text-primary bg-background-primary hover:bg-background-tertiary'
                           )}
                         >
                           <div className="flex-1 flex flex-col items-start justify-between p-5 no-drag text-left">
@@ -238,8 +238,8 @@ export const ExpandedRenderer: React.FC<NavigationRendererProps> = ({
                     'w-full relative flex flex-col rounded-xl',
                     'transition-colors duration-200 aspect-square shadow-sm hover:shadow-md',
                     active
-                      ? 'font-medium text-text-primary bg-background-primary hover:bg-background-tertiary'
-                      : 'text-text-secondary hover:text-text-primary bg-background-primary hover:bg-background-tertiary'
+                      ? 'text-text-secondary bg-background-tertiary'
+                      : 'font-medium text-text-primary bg-background-primary hover:bg-background-tertiary'
                   )}
                 >
                   <button

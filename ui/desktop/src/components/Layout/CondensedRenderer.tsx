@@ -4,6 +4,8 @@ import { motion } from 'framer-motion';
 import { defineMessages, useIntl } from '../../i18n';
 import { cn } from '../../utils';
 import { DropdownMenu, DropdownMenuTrigger } from '../ui/dropdown-menu';
+import { AgentMood } from '../AgentMood';
+import { useAgentMood } from '../../contexts/AgentMoodContext';
 import { ChatSessionsDropdown, SessionsList } from './navigation';
 import type { NavigationRendererProps } from './navigation/types';
 
@@ -36,6 +38,7 @@ export const CondensedRenderer: React.FC<NavigationRendererProps> = ({
 }) => {
   const intl = useIntl();
   const [chatPopoverOpen, setChatPopoverOpen] = useState(false);
+  const agentMood = useAgentMood();
 
   const isVertical = navigationPosition === 'left' || navigationPosition === 'right';
   const isTopPosition = navigationPosition === 'top';
@@ -121,8 +124,8 @@ export const CondensedRenderer: React.FC<NavigationRendererProps> = ({
                             'rounded-lg transition-colors duration-200 no-drag',
                             'p-2.5',
                             active
-                              ? 'font-medium text-text-primary'
-                              : 'text-text-secondary hover:text-text-primary'
+                              ? 'text-text-secondary bg-background-tertiary'
+                              : 'text-text-primary hover:text-text-secondary'
                           )}
                         >
                           <Icon className="size-4" />
@@ -152,8 +155,8 @@ export const CondensedRenderer: React.FC<NavigationRendererProps> = ({
                               'relative rounded-lg transition-colors duration-200 no-drag',
                               'w-full p-3',
                               active
-                                ? 'font-medium text-text-primary'
-                                : 'text-text-secondary hover:text-text-primary'
+                                ? 'text-text-secondary bg-background-tertiary'
+                                : 'text-text-primary hover:text-text-secondary'
                             )}
                           >
                             <Icon className="size-4 flex-shrink-0" />
@@ -196,12 +199,10 @@ export const CondensedRenderer: React.FC<NavigationRendererProps> = ({
                           className={cn(
                             'flex flex-row items-center gap-2',
                             'relative rounded-lg transition-colors duration-200 no-drag',
-                            isCondensedIconOnly
-                              ? 'justify-center p-2.5'
-                              : 'w-full p-3',
+                            isCondensedIconOnly ? 'justify-center p-2.5' : 'w-full p-3',
                             active
-                              ? 'font-medium text-text-primary'
-                              : 'text-text-secondary hover:text-text-primary'
+                              ? 'text-text-secondary bg-background-tertiary'
+                              : 'font-medium text-text-primary hover:text-text-secondary'
                           )}
                         >
                           <Icon className="size-4 flex-shrink-0" />
@@ -250,6 +251,14 @@ export const CondensedRenderer: React.FC<NavigationRendererProps> = ({
               isCondensedIconOnly ? 'w-[40px]' : 'w-full'
             )}
           />
+          <div
+            className={cn('flex justify-center py-2 flex-shrink-0', !isCondensedIconOnly && 'w-full')}
+            onMouseEnter={() => window.dispatchEvent(new CustomEvent('goose:avatar-hover'))}
+            onClick={() => window.dispatchEvent(new CustomEvent('goose:avatar-click'))}
+            style={{ cursor: 'pointer' }}
+          >
+            <AgentMood mood={agentMood} isCondensed={isCondensedIconOnly} />
+          </div>
         </div>
       ) : (
         /* Horizontal navigation items */
@@ -289,8 +298,8 @@ export const CondensedRenderer: React.FC<NavigationRendererProps> = ({
                           'relative rounded-lg transition-colors duration-200 no-drag',
                           'px-3 py-2.5',
                           active
-                            ? 'font-medium text-text-primary'
-                            : 'text-text-secondary hover:text-text-primary'
+                            ? 'text-text-secondary bg-background-tertiary'
+                            : 'font-medium text-text-primary hover:text-text-secondary'
                         )}
                       >
                         <Icon className="size-4 flex-shrink-0" />
@@ -319,8 +328,8 @@ export const CondensedRenderer: React.FC<NavigationRendererProps> = ({
                       'flex flex-row items-center gap-2 px-3 py-2.5',
                       'relative rounded-lg transition-colors duration-200 no-drag',
                       active
-                        ? 'font-medium text-text-primary'
-                        : 'text-text-secondary hover:text-text-primary'
+                        ? 'text-text-secondary bg-background-tertiary'
+                        : 'font-medium text-text-primary hover:text-text-secondary'
                     )}
                   >
                     <Icon className="size-4 flex-shrink-0" />
