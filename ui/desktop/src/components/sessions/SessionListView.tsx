@@ -14,6 +14,9 @@ import {
   ExternalLink,
   Copy,
   Puzzle,
+  Archive,
+  ArchiveRestore,
+  LayoutGrid,
 } from 'lucide-react';
 import { Card } from '../ui/card';
 import { Button } from '../ui/button';
@@ -79,6 +82,15 @@ const i18n = defineMessages({
   deleteSession: { id: 'sessions.action.delete', defaultMessage: 'Delete session' },
   exportSession: { id: 'sessions.action.export', defaultMessage: 'Export session' },
   extensions: { id: 'sessions.extensions', defaultMessage: 'Extensions:' },
+  archiveSession: { id: 'sessions.action.archive', defaultMessage: 'Archive session' },
+  unarchiveSession: { id: 'sessions.action.unarchive', defaultMessage: 'Unarchive session' },
+  archiveSuccess: { id: 'sessions.toast.archived', defaultMessage: 'Session archived successfully' },
+  unarchiveSuccess: { id: 'sessions.toast.unarchived', defaultMessage: 'Session unarchived successfully' },
+  archiveFailed: { id: 'sessions.toast.archiveFailed', defaultMessage: 'Failed to archive session: {error}' },
+  unarchiveFailed: { id: 'sessions.toast.unarchiveFailed', defaultMessage: 'Failed to unarchive session: {error}' },
+  filterAll: { id: 'sessions.filter.all', defaultMessage: 'All' },
+  filterActive: { id: 'sessions.filter.active', defaultMessage: 'Active' },
+  filterArchived: { id: 'sessions.filter.archived', defaultMessage: 'Archived' },
 });
 
 function getSessionExtensionNames(extensionData: ExtensionData): string[] {
@@ -92,6 +104,18 @@ function getSessionExtensionNames(extensionData: ExtensionData): string[] {
   } catch {
     return [];
   }
+}
+
+import { archiveSession, unarchiveSession } from '../../api/sdk.gen';
+
+type SessionWithArchive = Session & { archived_at?: string | null };
+
+async function archiveSessionApi(sessionId: string): Promise<void> {
+  await archiveSession<true>({ path: { session_id: sessionId }, throwOnError: true });
+}
+
+async function unarchiveSessionApi(sessionId: string): Promise<void> {
+  await unarchiveSession<true>({ path: { session_id: sessionId }, throwOnError: true });
 }
 
 interface EditSessionModalProps {
@@ -268,6 +292,8 @@ const SessionListView: React.FC<SessionListViewProps> = React.memo(
     // Search state for debouncing
     const [searchTerm, setSearchTerm] = useState('');
     const [caseSensitive, setCaseSensitive] = useState(false);
+    type SessionFilter = 'all' | 'active' | 'archived';
+    const [activeFilter, setActiveFilter] = useState<SessionFilter>('active');
     const debouncedSearchTerm = useDebounce(searchTerm, 300); // 300ms debounce
 
     const containerRef = useRef<HTMLDivElement>(null);
@@ -319,11 +345,7 @@ const SessionListView: React.FC<SessionListViewProps> = React.memo(
       try {
         const resp = await listSessions<true>({ throwOnError: true });
         const sessions = resp.data.sessions;
-        // Use startTransition to make state updates non-blocking
-        startTransition(() => {
-          setSessions(sessions);
-          setFilteredSessions(sessions);
-        });
+        setSessions(sessions);
       } catch (err) {
         console.error('Failed to load sessions:', err);
         setError('Failed to load sessions. Please try again later.');
@@ -382,13 +404,18 @@ const SessionListView: React.FC<SessionListViewProps> = React.memo(
       }
     }, [selectedSessionId, sessions]);
 
-    // Debounced search effect - performs content search via API
+    // Debounced search effect - performs content search via API and respects archive filter
     useEffect(() => {
       if (!debouncedSearchTerm) {
-        startTransition(() => {
-          setFilteredSessions(sessions);
-          setSearchResults(null);
-        });
+        // Apply archive filter when no search
+        if (activeFilter === 'all') {
+          startTransition(() => setFilteredSessions(sessions));
+        } else if (activeFilter === 'archived') {
+          startTransition(() => setFilteredSessions(sessions.filter((s) => (s as SessionWithArchive).archived_at != null)));
+        } else {
+          startTransition(() => setFilteredSessions(sessions.filter((s) => (s as SessionWithArchive).archived_at == null)));
+        }
+        setSearchResults(null);
         return;
       }
 
@@ -401,7 +428,14 @@ const SessionListView: React.FC<SessionListViewProps> = React.memo(
         if (resp.data) {
           // Response is Vec<Session> - sessions that match the search
           const matchedSessionIds = new Set(resp.data.map((s: { id: string }) => s.id));
-          const filtered = sessions.filter((session) => matchedSessionIds.has(session.id));
+          let filtered = sessions.filter((session) => matchedSessionIds.has(session.id));
+
+          // Apply archive filter on top of search results
+          if (activeFilter === 'archived') {
+            filtered = filtered.filter((s) => (s as SessionWithArchive).archived_at != null);
+          } else if (activeFilter === 'active') {
+            filtered = filtered.filter((s) => (s as SessionWithArchive).archived_at == null);
+          }
 
           startTransition(() => {
             setFilteredSessions(filtered);
@@ -413,7 +447,7 @@ const SessionListView: React.FC<SessionListViewProps> = React.memo(
       };
 
       performSearch();
-    }, [debouncedSearchTerm, caseSensitive, sessions]);
+    }, [debouncedSearchTerm, caseSensitive, sessions, activeFilter]);
 
     // Handle immediate search input (updates search term for debouncing)
     const handleSearch = useCallback((term: string, caseSensitive: boolean) => {
@@ -580,6 +614,32 @@ const SessionListView: React.FC<SessionListViewProps> = React.memo(
       });
     }, []);
 
+    const handleArchiveSession = useCallback(
+      async (session: Session) => {
+        try {
+          await archiveSessionApi(session.id);
+          toast.success(intl.formatMessage(i18n.archiveSuccess));
+          await loadSessions();
+        } catch (error) {
+          toast.error(intl.formatMessage(i18n.archiveFailed, { error: errorMessage(error, 'Unknown error') }));
+        }
+      },
+      [loadSessions, intl]
+    );
+
+    const handleUnarchiveSession = useCallback(
+      async (session: Session) => {
+        try {
+          await unarchiveSessionApi(session.id);
+          toast.success(intl.formatMessage(i18n.unarchiveSuccess));
+          await loadSessions();
+        } catch (error) {
+          toast.error(intl.formatMessage(i18n.unarchiveFailed, { error: errorMessage(error, 'Unknown error') }));
+        }
+      },
+      [loadSessions, intl]
+    );
+
     const SessionItem = React.memo(function SessionItem({
       session,
       onEditClick,
@@ -587,6 +647,8 @@ const SessionListView: React.FC<SessionListViewProps> = React.memo(
       onDeleteClick,
       onExportClick,
       onOpenInNewWindow,
+      onArchiveClick,
+      onUnarchiveClick,
     }: {
       session: Session;
       onEditClick: (session: Session) => void;
@@ -594,6 +656,8 @@ const SessionListView: React.FC<SessionListViewProps> = React.memo(
       onDeleteClick: (session: Session) => void;
       onExportClick: (session: Session, e: React.MouseEvent) => void;
       onOpenInNewWindow: (session: Session, e: React.MouseEvent) => void;
+      onArchiveClick: (session: Session) => void;
+      onUnarchiveClick: (session: Session) => void;
     }) {
       const handleEditClick = useCallback(
         (e: React.MouseEvent) => {
@@ -637,7 +701,24 @@ const SessionListView: React.FC<SessionListViewProps> = React.memo(
         [onOpenInNewWindow, session]
       );
 
+      const handleArchiveClick = useCallback(
+        (e: React.MouseEvent) => {
+          e.stopPropagation();
+          onArchiveClick(session);
+        },
+        [onArchiveClick, session]
+      );
+
+      const handleUnarchiveClick = useCallback(
+        (e: React.MouseEvent) => {
+          e.stopPropagation();
+          onUnarchiveClick(session);
+        },
+        [onUnarchiveClick, session]
+      );
+
       const displayName = shouldShowNewChatTitle(session) ? DEFAULT_CHAT_TITLE : session.name;
+      const sessionWithArchive = session as SessionWithArchive;
 
       // Get extension names for this session
       const extensionNames = useMemo(
@@ -648,7 +729,7 @@ const SessionListView: React.FC<SessionListViewProps> = React.memo(
       return (
         <Card
           onClick={handleCardClick}
-          className="h-full py-3 px-4 hover:shadow-default cursor-pointer transition-all duration-150 flex flex-col justify-between relative group"
+          className={`h-full py-3 px-4 hover:shadow-default cursor-pointer transition-all duration-150 flex flex-col justify-between relative group ${sessionWithArchive.archived_at ? 'opacity-60' : ''}`}
           ref={(el) => setSessionRefs(session.id, el)}
         >
           <div>
@@ -722,6 +803,23 @@ const SessionListView: React.FC<SessionListViewProps> = React.memo(
             >
               <Copy className="w-3 h-3 text-text-secondary hover:text-text-primary" />
             </button>
+            {sessionWithArchive.archived_at ? (
+              <button
+                onClick={handleUnarchiveClick}
+                className="p-2 rounded hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer"
+                title={intl.formatMessage(i18n.unarchiveSession)}
+              >
+                <ArchiveRestore className="w-3 h-3 text-text-secondary hover:text-text-primary" />
+              </button>
+            ) : (
+              <button
+                onClick={handleArchiveClick}
+                className="p-2 rounded hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer"
+                title={intl.formatMessage(i18n.archiveSession)}
+              >
+                <Archive className="w-3 h-3 text-text-secondary hover:text-text-primary" />
+              </button>
+            )}
             <button
               onClick={handleDeleteClick}
               className="p-2 rounded hover:bg-red-50 dark:hover:bg-red-900/20 cursor-pointer transition-colors"
@@ -829,6 +927,8 @@ const SessionListView: React.FC<SessionListViewProps> = React.memo(
                     onDeleteClick={handleDeleteSession}
                     onExportClick={handleExportSession}
                     onOpenInNewWindow={handleOpenInNewWindow}
+                    onArchiveClick={handleArchiveSession}
+                    onUnarchiveClick={handleUnarchiveSession}
                   />
                 ))}
               </div>
@@ -865,9 +965,44 @@ const SessionListView: React.FC<SessionListViewProps> = React.memo(
                     {intl.formatMessage(i18n.importSession)}
                   </Button>
                 </div>
-                <p className="text-sm text-text-secondary mb-4">
+                <p className="text-sm text-text-secondary">
                   {intl.formatMessage(i18n.chatHistoryDesc, { shortcut: getSearchShortcutText() })}
                 </p>
+                <div className="flex items-center gap-2 mt-3">
+                  <button
+                    onClick={() => setActiveFilter('all')}
+                    className={`px-3 py-1 text-xs rounded-full transition-colors ${
+                      activeFilter === 'all'
+                        ? 'bg-text-primary text-background-primary'
+                        : 'text-text-secondary hover:text-text-primary hover:bg-background-tertiary'
+                    }`}
+                  >
+                    <LayoutGrid className="w-3 h-3 inline mr-1" />
+                    {intl.formatMessage(i18n.filterAll)}
+                  </button>
+                  <button
+                    onClick={() => setActiveFilter('active')}
+                    className={`px-3 py-1 text-xs rounded-full transition-colors ${
+                      activeFilter === 'active'
+                        ? 'bg-text-primary text-background-primary'
+                        : 'text-text-secondary hover:text-text-primary hover:bg-background-tertiary'
+                    }`}
+                  >
+                    <MessageSquareText className="w-3 h-3 inline mr-1" />
+                    {intl.formatMessage(i18n.filterActive)}
+                  </button>
+                  <button
+                    onClick={() => setActiveFilter('archived')}
+                    className={`px-3 py-1 text-xs rounded-full transition-colors ${
+                      activeFilter === 'archived'
+                        ? 'bg-text-primary text-background-primary'
+                        : 'text-text-secondary hover:text-text-primary hover:bg-background-tertiary'
+                    }`}
+                  >
+                    <Archive className="w-3 h-3 inline mr-1" />
+                    {intl.formatMessage(i18n.filterArchived)}
+                  </button>
+                </div>
               </div>
             </div>
 

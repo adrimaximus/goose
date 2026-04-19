@@ -3482,6 +3482,44 @@
         ]
       }
     },
+    "/sessions/{session_id}/archive": {
+      "put": {
+        "tags": [
+          "Session Management"
+        ],
+        "operationId": "archive_session",
+        "parameters": [
+          {
+            "name": "session_id",
+            "in": "path",
+            "description": "Unique identifier for the session",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Session archived successfully"
+          },
+          "401": {
+            "description": "Unauthorized - Invalid or missing API key"
+          },
+          "404": {
+            "description": "Session not found"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
+      }
+    },
     "/sessions/{session_id}/export": {
       "get": {
         "tags": [
@@ -3663,6 +3701,44 @@
           },
           "400": {
             "description": "Bad request - Name too long (max 200 characters)"
+          },
+          "401": {
+            "description": "Unauthorized - Invalid or missing API key"
+          },
+          "404": {
+            "description": "Session not found"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
+      }
+    },
+    "/sessions/{session_id}/unarchive": {
+      "put": {
+        "tags": [
+          "Session Management"
+        ],
+        "operationId": "unarchive_session",
+        "parameters": [
+          {
+            "name": "session_id",
+            "in": "path",
+            "description": "Unique identifier for the session",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Session unarchived successfully"
           },
           "401": {
             "description": "Unauthorized - Invalid or missing API key"
@@ -7727,6 +7803,11 @@
           "accumulated_total_tokens": {
             "type": "integer",
             "format": "int32",
+            "nullable": true
+          },
+          "archived_at": {
+            "type": "string",
+            "format": "date-time",
             "nullable": true
           },
           "conversation": {

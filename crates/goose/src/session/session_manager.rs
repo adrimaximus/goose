@@ -19,7 +19,7 @@ use std::sync::{Arc, LazyLock};
 use tracing::{info, warn};
 use utoipa::ToSchema;
 
-pub const CURRENT_SCHEMA_VERSION: i32 = 10;
+pub const CURRENT_SCHEMA_VERSION: i32 = 11;
 pub const SESSIONS_FOLDER: &str = "sessions";
 pub const DB_NAME: &str = "sessions.db";
 
@@ -83,6 +83,8 @@ pub struct Session {
     pub goose_mode: GooseMode,
     #[serde(default)]
     pub thread_id: Option<String>,
+    #[serde(default)]
+    pub archived_at: Option<DateTime<Utc>>,
 }
 
 pub struct SessionUpdateBuilder<'a> {
@@ -321,6 +323,14 @@ impl SessionManager {
         self.storage.delete_session(id).await
     }
 
+    pub async fn archive_session(&self, id: &str) -> Result<()> {
+        self.storage.archive_session(id).await
+    }
+
+    pub async fn unarchive_session(&self, id: &str) -> Result<()> {
+        self.storage.unarchive_session(id).await
+    }
+
     pub async fn get_insights(&self) -> Result<SessionInsights> {
         self.storage
             .get_insights(&[SessionType::User, SessionType::Scheduled])
@@ -464,6 +474,7 @@ impl Default for Session {
             model_config: None,
             goose_mode: GooseMode::default(),
             thread_id: None,
+            archived_at: None,
         }
     }
 }
@@ -534,6 +545,7 @@ impl sqlx::FromRow<'_, sqlx::sqlite::SqliteRow> for Session {
                 .and_then(|s| s.parse().ok())
                 .unwrap_or_default(),
             thread_id: row.try_get("thread_id").ok().flatten(),
+            archived_at: row.try_get("archived_at").ok().flatten(),
         })
     }
 }
@@ -1060,6 +1072,19 @@ impl SessionStorage {
                     .execute(&mut **tx)
                     .await?;
             }
+            11 => {
+                let has_archived_at = sqlx::query_scalar::<_, i32>(
+                    "SELECT COUNT(*) FROM pragma_table_info('sessions') WHERE name = 'archived_at'",
+                )
+                .fetch_one(&mut **tx)
+                .await?
+                    > 0;
+                if !has_archived_at {
+                    sqlx::query("ALTER TABLE sessions ADD COLUMN archived_at TIMESTAMP")
+                        .execute(&mut **tx)
+                        .await?;
+                }
+            }
             _ => {
                 anyhow::bail!("Unknown migration version: {}", version);
             }
@@ -1117,13 +1142,15 @@ impl SessionStorage {
         let pool = self.pool().await?;
         let mut session = sqlx::query_as::<_, Session>(
             r#"
-        SELECT id, working_dir, name, description, user_set_name, session_type, created_at, updated_at, extension_data,
-               total_tokens, input_tokens, output_tokens,
-               accumulated_total_tokens, accumulated_input_tokens, accumulated_output_tokens,
-               schedule_id, recipe_json, user_recipe_values_json,
-               provider_name, model_config_json, goose_mode, thread_id
-        FROM sessions
-        WHERE id = ?
+        SELECT s.id, s.working_dir, s.name, s.description, s.user_set_name, s.session_type, s.created_at, s.updated_at, s.extension_data,
+               s.total_tokens, s.input_tokens, s.output_tokens,
+               s.accumulated_total_tokens, s.accumulated_input_tokens, s.accumulated_output_tokens,
+               s.schedule_id, s.recipe_json, s.user_recipe_values_json,
+               s.provider_name, s.model_config_json, s.goose_mode, s.thread_id,
+               t.archived_at
+        FROM sessions s
+        LEFT JOIN threads t ON s.thread_id = t.id
+        WHERE s.id = ?
     "#,
         )
             .bind(id)
@@ -1409,9 +1436,11 @@ impl SessionStorage {
                    s.accumulated_total_tokens, s.accumulated_input_tokens, s.accumulated_output_tokens,
                    s.schedule_id, s.recipe_json, s.user_recipe_values_json,
                    s.provider_name, s.model_config_json, s.goose_mode, s.thread_id,
+                   COALESCE(s.archived_at, t.archived_at) as archived_at,
                    COUNT(m.id) as message_count
             FROM sessions s
             LEFT JOIN messages m ON s.id = m.session_id
+            LEFT JOIN threads t ON s.thread_id = t.id
             {}
             GROUP BY s.id
             ORDER BY s.updated_at DESC
@@ -1458,6 +1487,52 @@ impl SessionStorage {
             .await?;
 
         tx.commit().await?;
+        Ok(())
+    }
+
+    async fn archive_session(&self, session_id: &str) -> Result<()> {
+        let pool = self.pool().await?;
+        sqlx::query("UPDATE sessions SET archived_at = CURRENT_TIMESTAMP WHERE id = ?")
+            .bind(session_id)
+            .execute(pool)
+            .await?;
+
+        let thread_id: Option<String> =
+            sqlx::query_scalar("SELECT thread_id FROM sessions WHERE id = ?")
+                .bind(session_id)
+                .fetch_optional(pool)
+                .await?
+                .flatten();
+
+        if let Some(tid) = thread_id {
+            sqlx::query("UPDATE threads SET archived_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP WHERE id = ?")
+                .bind(&tid)
+                .execute(pool)
+                .await?;
+        }
+        Ok(())
+    }
+
+    async fn unarchive_session(&self, session_id: &str) -> Result<()> {
+        let pool = self.pool().await?;
+        sqlx::query("UPDATE sessions SET archived_at = NULL WHERE id = ?")
+            .bind(session_id)
+            .execute(pool)
+            .await?;
+
+        let thread_id: Option<String> =
+            sqlx::query_scalar("SELECT thread_id FROM sessions WHERE id = ?")
+                .bind(session_id)
+                .fetch_optional(pool)
+                .await?
+                .flatten();
+
+        if let Some(tid) = thread_id {
+            sqlx::query("UPDATE threads SET archived_at = NULL, updated_at = CURRENT_TIMESTAMP WHERE id = ?")
+                .bind(&tid)
+                .execute(pool)
+                .await?;
+        }
         Ok(())
     }
 

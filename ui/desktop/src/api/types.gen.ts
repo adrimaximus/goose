@@ -1238,6 +1238,7 @@ export type Session = {
     accumulated_input_tokens?: number | null;
     accumulated_output_tokens?: number | null;
     accumulated_total_tokens?: number | null;
+    archived_at?: string | null;
     conversation?: Conversation | null;
     created_at: string;
     extension_data: ExtensionData;
@@ -4338,6 +4339,40 @@ export type GetSessionResponses = {
 
 export type GetSessionResponse = GetSessionResponses[keyof GetSessionResponses];
 
+export type ArchiveSessionData = {
+    body?: never;
+    path: {
+        /**
+         * Unique identifier for the session
+         */
+        session_id: string;
+    };
+    query?: never;
+    url: '/sessions/{session_id}/archive';
+};
+
+export type ArchiveSessionErrors = {
+    /**
+     * Unauthorized - Invalid or missing API key
+     */
+    401: unknown;
+    /**
+     * Session not found
+     */
+    404: unknown;
+    /**
+     * Internal server error
+     */
+    500: unknown;
+};
+
+export type ArchiveSessionResponses = {
+    /**
+     * Session archived successfully
+     */
+    200: unknown;
+};
+
 export type ExportSessionData = {
     body?: never;
     path: {
@@ -4484,6 +4519,40 @@ export type UpdateSessionNameErrors = {
 export type UpdateSessionNameResponses = {
     /**
      * Session name updated successfully
+     */
+    200: unknown;
+};
+
+export type UnarchiveSessionData = {
+    body?: never;
+    path: {
+        /**
+         * Unique identifier for the session
+         */
+        session_id: string;
+    };
+    query?: never;
+    url: '/sessions/{session_id}/unarchive';
+};
+
+export type UnarchiveSessionErrors = {
+    /**
+     * Unauthorized - Invalid or missing API key
+     */
+    401: unknown;
+    /**
+     * Session not found
+     */
+    404: unknown;
+    /**
+     * Internal server error
+     */
+    500: unknown;
+};
+
+export type UnarchiveSessionResponses = {
+    /**
+     * Session unarchived successfully
      */
     200: unknown;
 };

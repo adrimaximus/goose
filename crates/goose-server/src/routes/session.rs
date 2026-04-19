@@ -498,6 +498,66 @@ async fn get_session_extensions(
     Ok(Json(SessionExtensionsResponse { extensions }))
 }
 
+#[utoipa::path(
+    put,
+    path = "/sessions/{session_id}/archive",
+    params(
+        ("session_id" = String, Path, description = "Unique identifier for the session")
+    ),
+    responses(
+        (status = 200, description = "Session archived successfully"),
+        (status = 401, description = "Unauthorized - Invalid or missing API key"),
+        (status = 404, description = "Session not found"),
+        (status = 500, description = "Internal server error")
+    ),
+    security(
+        ("api_key" = [])
+    ),
+    tag = "Session Management"
+)]
+async fn archive_session(
+    State(state): State<Arc<AppState>>,
+    Path(session_id): Path<String>,
+) -> Result<StatusCode, StatusCode> {
+    state
+        .session_manager()
+        .archive_session(&session_id)
+        .await
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+
+    Ok(StatusCode::OK)
+}
+
+#[utoipa::path(
+    put,
+    path = "/sessions/{session_id}/unarchive",
+    params(
+        ("session_id" = String, Path, description = "Unique identifier for the session")
+    ),
+    responses(
+        (status = 200, description = "Session unarchived successfully"),
+        (status = 401, description = "Unauthorized - Invalid or missing API key"),
+        (status = 404, description = "Session not found"),
+        (status = 500, description = "Internal server error")
+    ),
+    security(
+        ("api_key" = [])
+    ),
+    tag = "Session Management"
+)]
+async fn unarchive_session(
+    State(state): State<Arc<AppState>>,
+    Path(session_id): Path<String>,
+) -> Result<StatusCode, StatusCode> {
+    state
+        .session_manager()
+        .unarchive_session(&session_id)
+        .await
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+
+    Ok(StatusCode::OK)
+}
+
 pub fn routes(state: Arc<AppState>) -> Router {
     Router::new()
         .route("/sessions", get(list_sessions))
@@ -516,6 +576,8 @@ pub fn routes(state: Arc<AppState>) -> Router {
             put(update_session_user_recipe_values),
         )
         .route("/sessions/{session_id}/fork", post(fork_session))
+        .route("/sessions/{session_id}/archive", put(archive_session))
+        .route("/sessions/{session_id}/unarchive", put(unarchive_session))
         .route(
             "/sessions/{session_id}/extensions",
             get(get_session_extensions),
