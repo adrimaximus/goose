@@ -133,6 +133,7 @@ const SessionItem: React.FC<SessionItemProps> = ({
       id={session.id}
       dragListener={false}
       dragControls={dragControls}
+      style={{ touchAction: 'none' }}
       className={cn(
         'group/session w-full text-left py-1.5 px-2 text-xs rounded-md',
         'hover:bg-background-tertiary transition-colors',
@@ -148,7 +149,10 @@ const SessionItem: React.FC<SessionItemProps> = ({
     >
       <GripVertical
         className="w-3 h-3 flex-shrink-0 text-text-tertiary opacity-0 group-hover/session:opacity-100 transition-opacity cursor-grab active:cursor-grabbing"
-        onPointerDown={(e) => dragControls.start(e)}
+        onPointerDown={(e) => {
+          e.preventDefault();
+          dragControls.start(e);
+        }}
       />
       {session.recipe ? (
         <ChefHat className="w-4 h-4 flex-shrink-0 text-text-secondary" />
@@ -310,7 +314,6 @@ export const SessionsList: React.FC<SessionsListProps> = ({
             className="mt-[2px]"
           >
             <motion.div
-              layoutScroll
               className="bg-background-primary rounded-lg py-1 sessions-scroll-container no-drag"
               style={{
                 maxHeight: '240px',
@@ -344,6 +347,7 @@ export const SessionsList: React.FC<SessionsListProps> = ({
                 axis="y"
                 onReorder={handleReorder}
                 values={sessions}
+                style={{ touchAction: 'none' }}
                 className="list-none p-0 m-0 flex flex-col gap-[2px]"
               >
                 {sessions.map((session) => {
