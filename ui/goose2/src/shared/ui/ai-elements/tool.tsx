@@ -14,7 +14,7 @@ import {
   XCircleIcon,
 } from "lucide-react";
 import type { ComponentProps, ReactNode } from "react";
-import { isValidElement } from "react";
+import { isValidElement, type ComponentType } from "react";
 
 import { CodeBlock } from "./code-block";
 
@@ -31,6 +31,8 @@ export type ToolHeaderProps = {
   className?: string;
   showIcon?: boolean;
   elapsedSeconds?: number;
+  icon?: ComponentType<{ className?: string; size?: number }>;
+  description?: string;
 } & (
   | { type: ToolUIPart["type"]; state: ToolUIPart["state"]; toolName?: never }
   | {
@@ -39,6 +41,16 @@ export type ToolHeaderProps = {
       toolName: string;
     }
 );
+
+const statusDotColor: Record<ToolPart["state"], string> = {
+  "input-available": "bg-yellow-500 animate-pulse",
+  "input-streaming": "bg-gray-400",
+  "output-available": "bg-green-500",
+  "output-error": "bg-red-500",
+  "output-denied": "bg-orange-500",
+  "approval-requested": "bg-yellow-500 animate-pulse",
+  "approval-responded": "bg-blue-500",
+};
 
 const statusLabels: Record<ToolPart["state"], string> = {
   "approval-requested": "Awaiting Approval",
@@ -78,19 +90,34 @@ export const ToolHeader = ({
   toolName,
   showIcon = true,
   elapsedSeconds,
+  icon: IconProp,
+  description,
   ...props
 }: ToolHeaderProps) => {
   const derivedName =
     type === "dynamic-tool" ? toolName : type.split("-").slice(1).join("-");
+
+  const Icon = IconProp ?? (showIcon ? WrenchIcon : undefined);
 
   return (
     <CollapsibleTrigger
       className={cn("inline-flex items-center gap-1.5 py-px", className)}
       {...props}
     >
-      {showIcon && <WrenchIcon className="size-4 text-muted-foreground" />}
-      <span className="font-medium text-sm">{title ?? derivedName}</span>
-      {getStatusBadge(state)}
+      {Icon && (
+        <span className="relative">
+          <Icon className="size-4 text-muted-foreground" />
+          <span
+            className={cn(
+              "absolute -top-0.5 -right-0.5 block h-2 w-2 rounded-full",
+              statusDotColor[state],
+            )}
+          />
+        </span>
+      )}
+      <span className="font-medium text-sm">
+        {description ?? title ?? derivedName}
+      </span>
       {elapsedSeconds != null && (
         <span className="tabular-nums text-xs text-muted-foreground">
           {elapsedSeconds}s

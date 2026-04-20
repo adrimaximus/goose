@@ -407,6 +407,54 @@
   "createRecipeFromSession.title": {
     "defaultMessage": "Create Recipe from Session"
   },
+  "createSkillModal.cancel": {
+    "defaultMessage": "Cancel"
+  },
+  "createSkillModal.contentLabel": {
+    "defaultMessage": "Instructions"
+  },
+  "createSkillModal.contentPlaceholder": {
+    "defaultMessage": "Write the skill instructions here. This is the content that will be loaded when the skill is used."
+  },
+  "createSkillModal.create": {
+    "defaultMessage": "Create"
+  },
+  "createSkillModal.createSkillDescription": {
+    "defaultMessage": "Create a SKILL.md file in ~/.config/goose/skills/. The skill will be available to Goose immediately."
+  },
+  "createSkillModal.createSkillTitle": {
+    "defaultMessage": "Create New Skill"
+  },
+  "createSkillModal.creating": {
+    "defaultMessage": "Creating..."
+  },
+  "createSkillModal.descriptionLabel": {
+    "defaultMessage": "Description"
+  },
+  "createSkillModal.descriptionPlaceholder": {
+    "defaultMessage": "What does this skill do?"
+  },
+  "createSkillModal.errorContentRequired": {
+    "defaultMessage": "Instructions are required"
+  },
+  "createSkillModal.errorDescriptionRequired": {
+    "defaultMessage": "Description is required"
+  },
+  "createSkillModal.errorInvalidName": {
+    "defaultMessage": "Name can only contain lowercase letters, numbers, and hyphens"
+  },
+  "createSkillModal.errorNameRequired": {
+    "defaultMessage": "Name is required"
+  },
+  "createSkillModal.nameHint": {
+    "defaultMessage": "Lowercase, hyphens allowed. No spaces or slashes."
+  },
+  "createSkillModal.nameLabel": {
+    "defaultMessage": "Name"
+  },
+  "createSkillModal.namePlaceholder": {
+    "defaultMessage": "my-skill"
+  },
   "createSubRecipeInline.cancel": {
     "defaultMessage": "Cancel"
   },
@@ -1449,7 +1497,7 @@
     "defaultMessage": "Downloaded"
   },
   "huggingFaceModelSearch.downloading": {
-    "defaultMessage": "Downloading\u2026"
+    "defaultMessage": "Downloading…"
   },
   "huggingFaceModelSearch.loadingVariants": {
     "defaultMessage": "Loading variants..."
@@ -1845,7 +1893,7 @@
     "defaultMessage": "Vision"
   },
   "localInferenceSettings.visionEncoderDownloading": {
-    "defaultMessage": "Vision encoder downloading\u2026"
+    "defaultMessage": "Vision encoder downloading…"
   },
   "localInferenceSettings.visionEncoderNotDownloaded": {
     "defaultMessage": "Vision encoder not downloaded"
@@ -4130,8 +4178,14 @@
   "skillsView.adjustSearchTerms": {
     "defaultMessage": "Try adjusting your search terms"
   },
-  "skillsView.comingSoon": {
-    "defaultMessage": "Coming soon"
+  "skillsView.deleteSkillButton": {
+    "defaultMessage": "Delete"
+  },
+  "skillsView.deleteSkillDescription": {
+    "defaultMessage": "This will permanently remove this skill and its SKILL.md file."
+  },
+  "skillsView.deleteSkillTitle": {
+    "defaultMessage": "Delete Skill \"{name}\""
   },
   "skillsView.errorLoadingSkills": {
     "defaultMessage": "Error Loading Skills"
@@ -4140,7 +4194,7 @@
     "defaultMessage": "No matching skills found"
   },
   "skillsView.noSkillsDescription": {
-    "defaultMessage": "Skills are loaded from SKILL.md files in ~/.config/agents/skills/, .goose/skills/, or other supported directories."
+    "defaultMessage": "Create a skill to extend Goose capabilities. Skills are loaded from SKILL.md files."
   },
   "skillsView.noSkillsInstalled": {
     "defaultMessage": "No skills installed"

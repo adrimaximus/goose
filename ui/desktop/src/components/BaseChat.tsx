@@ -39,6 +39,7 @@ import { toastSuccess } from '../toasts';
 import { Recipe } from '../recipe';
 import { useAutoSubmit } from '../hooks/useAutoSubmit';
 import { Goose } from './icons';
+import betterworksLogo from '../assets/betterworks-logo.png';
 import EnvironmentBadge from './GooseSidebar/EnvironmentBadge';
 
 const i18n = defineMessages({
@@ -412,14 +413,14 @@ export default function BaseChat({
           {/* Goose watermark - top right */}
           <div className="absolute top-3 right-4 z-[60] flex flex-row items-center gap-1">
             <a
-              href="https://goose-docs.ai"
+              href="https://betterworks.id"
               target="_blank"
               rel="noopener noreferrer"
               className="no-drag flex flex-row items-center gap-1 hover:opacity-80 transition-opacity"
             >
-              <Goose className="size-5 goose-icon-animation" />
-              <span className="text-sm leading-none text-text-secondary -translate-y-px">
-                goose
+              <img src={betterworksLogo} alt="betterworks" className="size-5" />
+              <span className="text-sm leading-none text-text-secondary -translate-y-px font-semibold">
+                betterworks
               </span>
             </a>
             <EnvironmentBadge className="translate-y-px" />
@@ -434,6 +435,7 @@ export default function BaseChat({
             data-drop-zone="true"
             paddingX={6}
             paddingY={0}
+            handleScroll={() => window.dispatchEvent(new CustomEvent('betterworks:chat-scrolled'))}
           >
             {recipe?.title && (
               <div className="sticky top-0 z-10 bg-background-primary px-0 -mx-6 mb-6 pt-6">

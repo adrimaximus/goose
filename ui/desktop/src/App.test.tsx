@@ -119,6 +119,10 @@ vi.mock('react-toastify', () => ({
   ToastContainer: () => null,
 }));
 
+vi.mock('lottie-react', () => ({
+  default: () => null,
+}));
+
 vi.mock('./components/GoosehintsModal', () => ({
   GoosehintsModal: () => null,
 }));

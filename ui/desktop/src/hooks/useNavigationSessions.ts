@@ -225,6 +225,10 @@ export function useNavigationSessions(options: UseNavigationSessionsOptions = {}
     [navigate, onNavigate]
   );
 
+  const reorderSessions = useCallback((reordered: Session[]) => {
+    setRecentSessions(reordered);
+  }, []);
+
   return {
     recentSessions,
     activeSessionId,
@@ -233,6 +237,7 @@ export function useNavigationSessions(options: UseNavigationSessionsOptions = {}
     handleNavClick,
     handleNewChat,
     handleSessionClick,
+    reorderSessions,
   };
 }
 

@@ -278,6 +278,24 @@ function createEventProcessor(
         const tokenState = (event as Record<string, unknown>).token_state as TokenState;
         currentMessages = pushMessage(currentMessages, msg);
 
+        for (const content of msg.content) {
+          if (content.type === 'toolRequest') {
+            const toolCall = (content as Record<string, unknown>).toolCall as Record<string, unknown> | undefined;
+            const value = toolCall?.value as Record<string, unknown> | undefined;
+            const toolName = (value?.name as string) || 'unknown';
+            window.dispatchEvent(new CustomEvent(AppEvents.TOOL_CALL_STARTED, {
+              detail: { toolName, id: (content as Record<string, unknown>).id }
+            }));
+          }
+          if (content.type === 'toolResponse') {
+            const toolResult = (content as Record<string, unknown>).toolResult as Record<string, unknown> | undefined;
+            const status = (toolResult?.status as string) || 'success';
+            window.dispatchEvent(new CustomEvent(AppEvents.TOOL_CALL_COMPLETED, {
+              detail: { id: (content as Record<string, unknown>).id, status }
+            }));
+          }
+        }
+
         const hasToolConfirmation = msg.content.some(
           (content) =>
             content.type === 'actionRequired' && content.data.actionType === 'toolConfirmation'
@@ -407,10 +425,7 @@ export function useChatStream({
         });
       }
 
-      const isNewSession = sessionId && sessionId.match(/^\d{8}_\d{6}$/);
-      if (isNewSession) {
-        window.dispatchEvent(new CustomEvent(AppEvents.MESSAGE_STREAM_FINISHED));
-      }
+      window.dispatchEvent(new CustomEvent(AppEvents.MESSAGE_STREAM_FINISHED));
 
       // Refresh session name after each reply for the first 3 user messages
       if (!error && sessionId) {

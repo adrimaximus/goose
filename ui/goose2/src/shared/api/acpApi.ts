@@ -6,6 +6,19 @@ import type {
 } from "@agentclientprotocol/sdk";
 import { getClient } from "./acpConnection";
 
+let _cachedHomeDir: string | null = null;
+
+async function defaultArtifactsDir(): Promise<string> {
+  if (_cachedHomeDir) return `${_cachedHomeDir}/.goose/artifacts`;
+  try {
+    const { getHomeDir } = await import("./system");
+    _cachedHomeDir = await getHomeDir();
+  } catch {
+    _cachedHomeDir = "/tmp";
+  }
+  return `${_cachedHomeDir}/.goose/artifacts`;
+}
+
 export interface AcpProvider {
   id: string;
   label: string;
@@ -58,7 +71,7 @@ export async function forkSession(sessionId: string): Promise<AcpSessionInfo> {
   const client = await getClient();
   const response = await client.unstable_forkSession({
     sessionId,
-    cwd: "~/.goose/artifacts",
+    cwd: await defaultArtifactsDir(),
   });
   return {
     sessionId: response.sessionId,

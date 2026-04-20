@@ -49,6 +49,7 @@ export const Navigation: React.FC<{ className?: string }> = ({ className }) => {
     handleNavClick,
     handleNewChat,
     handleSessionClick,
+    reorderSessions,
   } = useNavigationSessions({
     onNavigate: isOverlayMode ? () => setIsNavExpanded(false) : undefined,
   });
@@ -191,6 +192,7 @@ export const Navigation: React.FC<{ className?: string }> = ({ className }) => {
     onToggleChatExpanded,
     drag,
     navFocusRef,
+    onSessionsReordered: reorderSessions,
   };
 
   const content =

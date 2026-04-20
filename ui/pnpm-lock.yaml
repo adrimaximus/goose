@@ -111,6 +111,12 @@ importers:
       lodash:
         specifier: ^4.17.23
         version: 4.17.23
+      lottie-emojis:
+        specifier: ^1.0.0
+        version: 1.0.0
+      lottie-react:
+        specifier: ^2.4.1
+        version: 2.4.1(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
       lucide-react:
         specifier: ^0.575.0
         version: 0.575.0(react@19.2.4)
@@ -296,8 +302,8 @@ importers:
         specifier: ^10.4.24
         version: 10.4.27(postcss@8.5.8)
       electron:
-        specifier: 41.0.0
-        version: 41.0.0
+        specifier: 41.2.1
+        version: 41.2.1
       electron-devtools-installer:
         specifier: ^4.0.0
         version: 4.0.0
@@ -4017,6 +4023,7 @@ packages:
   '@xmldom/xmldom@0.8.11':
     resolution: {integrity: sha512-cQzWCtO6C8TQiYl1ruKNn2U6Ao4o4WBBcbL61yJl84x+j5sOWWFU9X7DpND8XZG3daDppSsigMdfAIl2upQBRw==}
     engines: {node: '>=10.0.0'}
+    deprecated: this version has critical issues, please update to the latest version
 
   '@xtuc/ieee754@1.2.0':
     resolution: {integrity: sha512-DX8nKgqcGwsc0eJSqYt5lwP4DH5FlHnmuWWBRy7X0NcaGR0ZtuyeESgMwTYVEtxmsNGY+qit4QYT/MIYTOTPeA==}
@@ -5026,8 +5033,8 @@ packages:
     resolution: {integrity: sha512-bO3y10YikuUwUuDUQRM4KfwNkKhnpVO7IPdbsrejwN9/AABJzzTQ4GeHwyzNSrVO+tEH3/Np255a3sVZpZDjvg==}
     engines: {node: '>=8.0.0'}
 
-  electron@41.0.0:
-    resolution: {integrity: sha512-U7QueSj1cFj9QM0Qamgh/MK08662FVK555iMfapqU7mcAmIm4A8bZuZptpjMXrT4JNAMGjgWu9sOeO1+RPCJNw==}
+  electron@41.2.1:
+    resolution: {integrity: sha512-teeRThiYGTPKf/2yOW7zZA1bhb91KEQ4yLBPOg7GxpmnkLFLugKgQaAKOrCgdzwsXh/5mFIfmkm+4+wACJKwaA==}
     engines: {node: '>= 12.20.55'}
     hasBin: true
 
@@ -6382,6 +6389,18 @@ packages:
   loose-envify@1.4.0:
     resolution: {integrity: sha512-lyuxPGr/Wfhrlem2CL/UcnUc1zcqKAImBDzukY7Y5F/yQiNdko6+fRLevlw1HgMySw7f611UIY408EtxRSoK3Q==}
     hasBin: true
+
+  lottie-emojis@1.0.0:
+    resolution: {integrity: sha512-4s2kZWxZUX94jOBrHHzjtkKYikkuseo3oMLkdLP5ubVI8PyTisntIaUFhZfMmogko0NJ8decf33d1B2Pea6oYA==}
+
+  lottie-react@2.4.1:
+    resolution: {integrity: sha512-LQrH7jlkigIIv++wIyrOYFLHSKQpEY4zehPicL9bQsrt1rnoKRYCYgpCUe5maqylNtacy58/sQDZTkwMcTRxZw==}
+    peerDependencies:
+      react: ^19.2.4
+      react-dom: ^19.2.4
+
+  lottie-web@5.13.0:
+    resolution: {integrity: sha512-+gfBXl6sxXMPe8tKQm7qzLnUy5DUPJPKIyRHwtpCpyUEYjHYRJC/5gjUvdkuO2c3JllrPtHXH5UJJK8LRYl5yQ==}
 
   lowercase-keys@2.0.0:
     resolution: {integrity: sha512-tqNXrS78oMOE73NMxK4EMLQsQowWf8jKooH9g7xPavRT706R6bkQJ6DY2Te7QukaZsulxa30wQ7bk0pm4XiHmA==}
@@ -13582,7 +13601,7 @@ snapshots:
       - supports-color
     optional: true
 
-  electron@41.0.0:
+  electron@41.2.1:
     dependencies:
       '@electron/get': 2.0.3
       '@types/node': 24.12.0
@@ -15240,6 +15259,16 @@ snapshots:
   loose-envify@1.4.0:
     dependencies:
       js-tokens: 4.0.0
+
+  lottie-emojis@1.0.0: {}
+
+  lottie-react@2.4.1(react-dom@19.2.4(react@19.2.4))(react@19.2.4):
+    dependencies:
+      lottie-web: 5.13.0
+      react: 19.2.4
+      react-dom: 19.2.4(react@19.2.4)
+
+  lottie-web@5.13.0: {}
 
   lowercase-keys@2.0.0: {}
 

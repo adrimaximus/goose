@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { ChevronDown, ChevronRight, Plus } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { defineMessages, useIntl } from '../../i18n';
@@ -35,9 +35,11 @@ export const CondensedRenderer: React.FC<NavigationRendererProps> = ({
   onToggleChatExpanded,
   drag,
   navFocusRef,
+  onSessionsReordered,
 }) => {
   const intl = useIntl();
   const [chatPopoverOpen, setChatPopoverOpen] = useState(false);
+  const isSessionDragRef = useRef(false);
   const agentMood = useAgentMood();
 
   const isVertical = navigationPosition === 'left' || navigationPosition === 'right';
@@ -68,7 +70,7 @@ export const CondensedRenderer: React.FC<NavigationRendererProps> = ({
       {isVertical && (
         <div
           className={cn(
-            'bg-background-primary rounded-lg flex-shrink-0',
+            'bg-app rounded-lg flex-shrink-0',
             isCondensedIconOnly ? 'h-[80px] w-[40px]' : 'h-[48px] w-full'
           )}
         />
@@ -76,7 +78,7 @@ export const CondensedRenderer: React.FC<NavigationRendererProps> = ({
 
       {/* Left spacer (horizontal top position only) */}
       {!isVertical && isTopPosition && (
-        <div className="bg-background-primary rounded-lg self-stretch w-[160px] flex-shrink-0" />
+        <div className="bg-app rounded-lg self-stretch w-[160px] flex-shrink-0" />
       )}
 
       {/* Navigation items */}
@@ -92,17 +94,28 @@ export const CondensedRenderer: React.FC<NavigationRendererProps> = ({
             return (
               <motion.div
                 key={item.id}
-                draggable
-                onDragStart={(e) => drag.onDragStart(e as unknown as React.DragEvent, item.id)}
-                onDragOver={(e) => drag.onDragOver(e as unknown as React.DragEvent, item.id)}
-                onDrop={(e) => drag.onDrop(e as unknown as React.DragEvent, item.id)}
-                onDragEnd={drag.onDragEnd}
+                {...(!(isChatItem && isChatExpanded) ? {
+                  draggable: true,
+                  onDragStart: (e: React.DragEvent<HTMLDivElement>) => {
+                    drag.onDragStart(e, item.id);
+                  },
+                  onDragOver: (e: React.DragEvent<HTMLDivElement>) => {
+                    drag.onDragOver(e, item.id);
+                  },
+                  onDrop: (e: React.DragEvent<HTMLDivElement>) => {
+                    drag.onDrop(e, item.id);
+                  },
+                  onDragEnd: drag.onDragEnd,
+                } : {
+                  draggable: false,
+                })}
                 initial={{ opacity: 0 }}
                 animate={{ opacity: isDragging ? 0.5 : 1 }}
                 transition={{ duration: 0.15, delay: index * 0.02 }}
                 className={cn(
-                  'relative cursor-move group',
+                  'relative group',
                   isCondensedIconOnly ? 'flex-shrink-0' : 'w-full flex-shrink-0',
+                  !(isChatItem && isChatExpanded) && 'cursor-move',
                   isDragOver && 'ring-2 ring-blue-500 rounded-lg',
                   isChatItem && !isCondensedIconOnly && 'overflow-visible'
                 )}
@@ -113,6 +126,7 @@ export const CondensedRenderer: React.FC<NavigationRendererProps> = ({
                     isCondensedIconOnly ? 'items-start' : 'w-full',
                     isChatItem && !isCondensedIconOnly && 'overflow-visible'
                   )}
+                  style={{ position: 'relative' }}
                 >
                   {/* Chat item with dropdown in icon-only mode */}
                   {isChatItem && isCondensedIconOnly ? (
@@ -124,7 +138,7 @@ export const CondensedRenderer: React.FC<NavigationRendererProps> = ({
                             'rounded-lg transition-colors duration-200 no-drag',
                             'p-2.5',
                             active
-                              ? 'text-text-secondary'
+                              ? 'bg-background-tertiary text-text-secondary'
                               : 'text-text-primary hover:text-text-secondary'
                           )}
                         >
@@ -155,7 +169,7 @@ export const CondensedRenderer: React.FC<NavigationRendererProps> = ({
                               'relative rounded-lg transition-colors duration-200 no-drag',
                               'w-full p-3',
                               active
-                                ? 'text-text-secondary'
+                                ? 'bg-background-tertiary text-text-secondary'
                                 : 'text-text-primary hover:text-text-secondary'
                             )}
                           >
@@ -201,7 +215,7 @@ export const CondensedRenderer: React.FC<NavigationRendererProps> = ({
                             'relative rounded-lg transition-colors duration-200 no-drag',
                             isCondensedIconOnly ? 'justify-center p-2.5' : 'w-full p-3',
                             active
-                              ? 'text-text-secondary'
+                              ? 'bg-background-tertiary text-text-secondary'
                               : 'font-medium text-text-primary hover:text-text-secondary'
                           )}
                         >
@@ -228,17 +242,36 @@ export const CondensedRenderer: React.FC<NavigationRendererProps> = ({
                     </>
                   )}
                   {isChatItem && !isCondensedIconOnly && (
-                    <SessionsList
-                      sessions={recentSessions}
-                      activeSessionId={activeSessionId}
-                      isExpanded={isChatExpanded}
-                      getSessionStatus={getSessionStatus}
-                      clearUnread={clearUnread}
-                      onSessionClick={onSessionClick}
-                      onSessionRenamed={onFetchSessions}
-                      onNewChat={onNewChat}
-                      onShowAll={() => onNavClick('/sessions')}
-                    />
+                    <div
+                      draggable={false}
+                      className="no-drag"
+                      style={{ userSelect: 'none', WebkitUserSelect: 'none' }}
+                      onPointerDown={(e) => {
+                        e.stopPropagation();
+                        isSessionDragRef.current = true;
+                      }}
+                      onPointerUp={(e) => {
+                        e.stopPropagation();
+                        isSessionDragRef.current = false;
+                      }}
+                      onDragStart={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                      }}
+                    >
+                      <SessionsList
+                        sessions={recentSessions}
+                        activeSessionId={activeSessionId}
+                        isExpanded={isChatExpanded}
+                        getSessionStatus={getSessionStatus}
+                        clearUnread={clearUnread}
+                        onSessionClick={onSessionClick}
+                        onSessionRenamed={onFetchSessions}
+                        onSessionsReordered={onSessionsReordered}
+                        onShowAll={() => onNavClick('/sessions')}
+                        onNewChat={onNewChat}
+                      />
+                    </div>
                   )}
                 </div>
               </motion.div>
@@ -247,12 +280,12 @@ export const CondensedRenderer: React.FC<NavigationRendererProps> = ({
 
           <div
             className={cn(
-              'bg-background-primary rounded-lg flex-1 min-h-[40px]',
+              'bg-app rounded-lg flex-1 min-h-[40px]',
               isCondensedIconOnly ? 'w-[40px]' : 'w-full'
             )}
           />
           <div
-            className={cn('flex justify-center py-2 flex-shrink-0', !isCondensedIconOnly && 'w-full')}
+            className={cn('flex justify-center py-2 flex-shrink-0 bg-app rounded-lg', !isCondensedIconOnly && 'w-full')}
             onMouseEnter={() => window.dispatchEvent(new CustomEvent('goose:avatar-hover'))}
             onClick={() => window.dispatchEvent(new CustomEvent('goose:avatar-click'))}
             style={{ cursor: 'pointer' }}
@@ -298,7 +331,7 @@ export const CondensedRenderer: React.FC<NavigationRendererProps> = ({
                           'relative rounded-lg transition-colors duration-200 no-drag',
                           'px-3 py-2.5',
                           active
-                            ? 'text-text-secondary'
+                            ? 'bg-background-tertiary text-text-secondary'
                             : 'font-medium text-text-primary hover:text-text-secondary'
                         )}
                       >
@@ -328,7 +361,7 @@ export const CondensedRenderer: React.FC<NavigationRendererProps> = ({
                       'flex flex-row items-center gap-2 px-3 py-2.5',
                       'relative rounded-lg transition-colors duration-200 no-drag',
                       active
-                        ? 'text-text-secondary'
+                        ? 'bg-background-tertiary text-text-secondary'
                         : 'font-medium text-text-primary hover:text-text-secondary'
                     )}
                   >
@@ -347,7 +380,7 @@ export const CondensedRenderer: React.FC<NavigationRendererProps> = ({
       {/* Right spacer (horizontal only) */}
       {!isVertical && (
         <div
-          className="bg-background-primary rounded-lg self-stretch flex-1 min-w-[40px]"
+          className="bg-app rounded-lg self-stretch flex-1 min-w-[40px]"
           style={
             !isOverlayMode && isTopPosition
               ? ({ WebkitAppRegion: 'drag' } as React.CSSProperties)

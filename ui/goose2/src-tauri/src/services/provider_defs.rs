@@ -125,6 +125,16 @@ pub(crate) static PROVIDER_CONFIG_DEFS: &[ProviderConfigDef] = &[
         keys: &[],
         oauth_cache_path: None,
     },
+    ProviderConfigDef {
+        id: "zhipu_ai_coding_plan",
+        keys: &[key("CUSTOM_ZHIPU_AI_CODING_PLAN_API_KEY", true, true)],
+        oauth_cache_path: None,
+    },
+    ProviderConfigDef {
+        id: "minimax",
+        keys: &[key("MINIMAX_API_KEY", true, true)],
+        oauth_cache_path: None,
+    },
 ];
 
 pub(crate) fn find_config_key(key_name: &str) -> Option<&'static ConfigKey> {

@@ -15,6 +15,7 @@ import { ExtensionInstallModal } from './components/ExtensionInstallModal';
 import { toast, ToastContainer } from 'react-toastify';
 import AnnouncementModal from './components/AnnouncementModal';
 import TelemetryConsentPrompt from './components/TelemetryConsentPrompt';
+import InspectorToggle from './components/devtools/InspectorToggle';
 import OnboardingGuard from './components/onboarding/OnboardingGuard';
 import { createSession } from './sessions';
 
@@ -40,6 +41,7 @@ import { useConfig } from './components/ConfigContext';
 import { ModelAndProviderProvider } from './components/ModelAndProviderContext';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { FeaturesProvider } from './contexts/FeaturesContext';
+import { AgentMoodProvider } from './contexts/AgentMoodContext';
 import PermissionSettingsView from './components/settings/permission/PermissionSetting';
 
 import ExtensionsView, { ExtensionsViewOptions } from './components/extensions/ExtensionsView';
@@ -477,13 +479,18 @@ export function AppInner() {
   // Show a toast if mesh is the configured provider but isn't running.
   useEffect(() => {
     const handler = () => {
-      toast.warn('Inference Mesh is set as your provider but isn\'t running. Open Settings → Mesh to start it. Keep goose running to stay connected.', {
-        autoClose: false,
-        toastId: 'mesh-not-running',
-      });
+      toast.warn(
+        "Inference Mesh is set as your provider but isn't running. Open Settings → Mesh to start it. Keep goose running to stay connected.",
+        {
+          autoClose: false,
+          toastId: 'mesh-not-running',
+        }
+      );
     };
     window.electron.on('mesh-not-running', handler);
-    return () => { window.electron.off('mesh-not-running', handler); };
+    return () => {
+      window.electron.off('mesh-not-running', handler);
+    };
   }, []);
 
   // Prevent default drag and drop behavior globally to avoid opening files in new windows
@@ -705,13 +712,16 @@ export default function App() {
   return (
     <ThemeProvider>
       <FeaturesProvider>
-        <ModelAndProviderProvider>
-          <HashRouter>
-            <AppInner />
-          </HashRouter>
-          <AnnouncementModal />
-          <TelemetryConsentPrompt />
-        </ModelAndProviderProvider>
+        <AgentMoodProvider>
+          <ModelAndProviderProvider>
+            <HashRouter>
+              <AppInner />
+            </HashRouter>
+            <AnnouncementModal />
+            <TelemetryConsentPrompt />
+            {import.meta.env.DEV && <InspectorToggle />}
+          </ModelAndProviderProvider>
+        </AgentMoodProvider>
       </FeaturesProvider>
     </ThemeProvider>
   );

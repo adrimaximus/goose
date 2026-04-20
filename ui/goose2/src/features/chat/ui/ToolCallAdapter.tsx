@@ -11,6 +11,7 @@ import {
   ToolOutput,
 } from "@/shared/ui/ai-elements/tool";
 import { toolStatusMap } from "../lib/toolStatusMap";
+import { getToolIcon, getToolDescription } from "../lib/toolIconMapping";
 import type { ToolCallStatus } from "@/shared/types/messages";
 import { useArtifactPolicyContext } from "@/features/chat/hooks/ArtifactPolicyContext";
 import type { ArtifactPathCandidate } from "@/features/chat/lib/artifactPathPolicy";
@@ -219,6 +220,9 @@ export function ToolCallAdapter({
   const elapsedSeconds =
     status === "executing" && elapsed >= 3 ? elapsed : undefined;
 
+  const ToolIcon = getToolIcon(name);
+  const description = getToolDescription(name, args);
+
   return (
     <div>
       <Tool open={open} onOpenChange={onOpenChange}>
@@ -227,7 +231,8 @@ export function ToolCallAdapter({
           toolName={name}
           title={name}
           state={state}
-          showIcon={false}
+          icon={ToolIcon}
+          description={description}
           elapsedSeconds={elapsedSeconds}
         />
         <ToolContent>

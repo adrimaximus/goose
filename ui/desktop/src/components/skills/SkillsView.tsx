@@ -1,16 +1,19 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
-import { Zap, AlertCircle, Plus } from 'lucide-react';
+import { Zap, AlertCircle, Plus, Trash2 } from 'lucide-react';
 import { ScrollArea } from '../ui/scroll-area';
 import { Card } from '../ui/card';
 import { Button } from '../ui/button';
 import { Skeleton } from '../ui/skeleton';
 import { MainPanelLayout } from '../Layout/MainPanelLayout';
 import { getSlashCommands } from '../../api';
+import { client } from '../../api/client.gen';
 import { errorMessage } from '../../utils/conversionUtils';
 import { getInitialWorkingDir } from '../../utils/workingDir';
 import { defineMessages, useIntl } from '../../i18n';
 import { SearchView } from '../conversation/SearchView';
 import { getSearchShortcutText } from '../../utils/keyboardShortcuts';
+import CreateSkillModal from './CreateSkillModal';
+import { ConfirmationModal } from '../ui/ConfirmationModal';
 
 const i18n = defineMessages({
   errorLoadingSkills: {
@@ -28,7 +31,7 @@ const i18n = defineMessages({
   noSkillsDescription: {
     id: 'skillsView.noSkillsDescription',
     defaultMessage:
-      'Skills are loaded from SKILL.md files in ~/.config/agents/skills/, .goose/skills/, or other supported directories.',
+      'Create a skill to extend Goose capabilities. Skills are loaded from SKILL.md files.',
   },
   noMatchingSkills: {
     id: 'skillsView.noMatchingSkills',
@@ -54,9 +57,17 @@ const i18n = defineMessages({
     id: 'skillsView.searchSkillsPlaceholder',
     defaultMessage: 'Search skills...',
   },
-  comingSoon: {
-    id: 'skillsView.comingSoon',
-    defaultMessage: 'Coming soon',
+  deleteSkillTitle: {
+    id: 'skillsView.deleteSkillTitle',
+    defaultMessage: 'Delete Skill "{name}"',
+  },
+  deleteSkillDescription: {
+    id: 'skillsView.deleteSkillDescription',
+    defaultMessage: 'This will permanently remove this skill and its SKILL.md file.',
+  },
+  deleteSkill: {
+    id: 'skillsView.deleteSkillButton',
+    defaultMessage: 'Delete',
   },
 });
 
@@ -65,18 +76,50 @@ interface SkillEntry {
   description: string;
 }
 
-function SkillItem({ skill }: { skill: SkillEntry }) {
+function SkillItem({
+  skill,
+  onDelete,
+}: {
+  skill: SkillEntry;
+  onDelete: (name: string) => void;
+}) {
+  const intl = useIntl();
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+
   return (
-    <Card className="py-2 px-4 mb-2 bg-background-primary border-none hover:bg-background-secondary transition-all duration-150">
-      <div className="flex justify-between items-center gap-4">
-        <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-2 mb-1">
-            <h3 className="text-base truncate">{skill.name}</h3>
+    <>
+      <Card className="py-2 px-4 mb-2 bg-background-primary border-none hover:bg-background-secondary transition-all duration-150">
+        <div className="flex justify-between items-center gap-4">
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-2 mb-1">
+              <h3 className="text-base truncate">{skill.name}</h3>
+            </div>
+            <p className="text-text-secondary text-sm line-clamp-2">
+              {skill.description}
+            </p>
           </div>
-          <p className="text-text-secondary text-sm line-clamp-2">{skill.description}</p>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="text-text-secondary hover:text-red-500 shrink-0"
+            onClick={() => setShowDeleteConfirm(true)}
+          >
+            <Trash2 className="w-4 h-4" />
+          </Button>
         </div>
-      </div>
-    </Card>
+      </Card>
+      <ConfirmationModal
+        isOpen={showDeleteConfirm}
+        title={intl.formatMessage(i18n.deleteSkillTitle, {
+          name: skill.name,
+        })}
+        message={intl.formatMessage(i18n.deleteSkillDescription)}
+        confirmLabel={intl.formatMessage(i18n.deleteSkill)}
+        onConfirm={() => onDelete(skill.name)}
+        onCancel={() => setShowDeleteConfirm(false)}
+        confirmVariant="destructive"
+      />
+    </>
   );
 }
 
@@ -101,6 +144,7 @@ export default function SkillsView() {
   const [error, setError] = useState<string | null>(null);
   const [showContent, setShowContent] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+  const [showCreateModal, setShowCreateModal] = useState(false);
 
   const filteredSkills = useMemo(() => {
     if (!searchTerm) return skills;
@@ -108,7 +152,7 @@ export default function SkillsView() {
     return skills.filter(
       (skill) =>
         skill.name.toLowerCase().includes(searchLower) ||
-        skill.description.toLowerCase().includes(searchLower)
+        skill.description.toLowerCase().includes(searchLower),
     );
   }, [skills, searchTerm]);
 
@@ -151,6 +195,20 @@ export default function SkillsView() {
     return undefined;
   }, [loading, showSkeleton]);
 
+  const handleDeleteSkill = useCallback(
+    async (name: string) => {
+      try {
+        await client.delete({
+          url: `/config/skills/${encodeURIComponent(name)}`,
+        });
+        loadSkills();
+      } catch (err) {
+        setError(errorMessage(err, 'Failed to delete skill'));
+      }
+    },
+    [loadSkills],
+  );
+
   const renderContent = () => {
     if (loading || showSkeleton) {
       return (
@@ -166,7 +224,9 @@ export default function SkillsView() {
       return (
         <div className="flex flex-col items-center justify-center h-full text-text-secondary">
           <AlertCircle className="h-12 w-12 text-red-500 mb-4" />
-          <p className="text-lg mb-2">{intl.formatMessage(i18n.errorLoadingSkills)}</p>
+          <p className="text-lg mb-2">
+            {intl.formatMessage(i18n.errorLoadingSkills)}
+          </p>
           <p className="text-sm text-center mb-4">{error}</p>
           <Button onClick={loadSkills} variant="default">
             {intl.formatMessage(i18n.tryAgain)}
@@ -178,7 +238,9 @@ export default function SkillsView() {
     if (skills.length === 0) {
       return (
         <div className="flex flex-col justify-center pt-2 h-full">
-          <p className="text-lg">{intl.formatMessage(i18n.noSkillsInstalled)}</p>
+          <p className="text-lg">
+            {intl.formatMessage(i18n.noSkillsInstalled)}
+          </p>
           <p className="text-sm text-text-secondary">
             {intl.formatMessage(i18n.noSkillsDescription)}
           </p>
@@ -190,8 +252,12 @@ export default function SkillsView() {
       return (
         <div className="flex flex-col items-center justify-center h-full text-text-secondary mt-4">
           <Zap className="h-12 w-12 mb-4" />
-          <p className="text-lg mb-2">{intl.formatMessage(i18n.noMatchingSkills)}</p>
-          <p className="text-sm">{intl.formatMessage(i18n.adjustSearchTerms)}</p>
+          <p className="text-lg mb-2">
+            {intl.formatMessage(i18n.noMatchingSkills)}
+          </p>
+          <p className="text-sm">
+            {intl.formatMessage(i18n.adjustSearchTerms)}
+          </p>
         </div>
       );
     }
@@ -199,7 +265,11 @@ export default function SkillsView() {
     return (
       <div className="space-y-2">
         {filteredSkills.map((skill) => (
-          <SkillItem key={skill.name} skill={skill} />
+          <SkillItem
+            key={skill.name}
+            skill={skill}
+            onDelete={handleDeleteSkill}
+          />
         ))}
       </div>
     );
@@ -211,13 +281,14 @@ export default function SkillsView() {
         <div className="bg-background-primary px-8 pb-8 pt-16">
           <div className="flex flex-col page-transition">
             <div className="flex justify-between items-center mb-1">
-              <h1 className="text-4xl font-light">{intl.formatMessage(i18n.skillsTitle)}</h1>
+              <h1 className="text-4xl font-light">
+                {intl.formatMessage(i18n.skillsTitle)}
+              </h1>
               <Button
                 variant="outline"
                 size="sm"
                 className="flex items-center gap-2"
-                disabled
-                title={intl.formatMessage(i18n.comingSoon)}
+                onClick={() => setShowCreateModal(true)}
               >
                 <Plus className="w-4 h-4" />
                 {intl.formatMessage(i18n.addSkill)}
@@ -239,7 +310,9 @@ export default function SkillsView() {
             >
               <div
                 className={`h-full relative transition-all duration-300 ${
-                  showContent || showSkeleton ? 'opacity-100 animate-in fade-in' : 'opacity-0'
+                  showContent || showSkeleton
+                    ? 'opacity-100 animate-in fade-in'
+                    : 'opacity-0'
                 }`}
               >
                 {renderContent()}
@@ -248,6 +321,12 @@ export default function SkillsView() {
           </ScrollArea>
         </div>
       </div>
+
+      <CreateSkillModal
+        open={showCreateModal}
+        onClose={() => setShowCreateModal(false)}
+        onCreated={loadSkills}
+      />
     </MainPanelLayout>
   );
 }

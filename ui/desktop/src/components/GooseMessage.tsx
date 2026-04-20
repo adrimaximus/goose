@@ -1,4 +1,4 @@
-import { useMemo, useRef } from 'react';
+import { useMemo, useRef, useEffect } from 'react';
 import ImagePreview from './ImagePreview';
 import { formatMessageTimestamp } from '../utils/timeUtils';
 import MarkdownContent from './MarkdownContent';
@@ -22,6 +22,7 @@ import ElicitationRequest from './ElicitationRequest';
 import MessageCopyLink from './MessageCopyLink';
 import { cn } from '../utils';
 import { identifyConsecutiveToolCalls, shouldHideTimestamp } from '../utils/toolCallChaining';
+import { AppEvents } from '../constants/events';
 
 interface GooseMessageProps {
   sessionId: string;
@@ -50,6 +51,29 @@ export default function GooseMessage({
 
   const { textContent: displayText, imagePaths } = getTextAndImageContent(message);
   const thinkingContent = getThinkingContent(message);
+
+  const lastDispatchedRef = useRef<string>('');
+  const lastDispatchTimeRef = useRef<number>(0);
+
+  useEffect(() => {
+    if (!displayText.trim()) return;
+
+    if (isStreaming) {
+      const now = Date.now();
+      if (now - lastDispatchTimeRef.current >= 500 && displayText !== lastDispatchedRef.current) {
+        lastDispatchedRef.current = displayText;
+        lastDispatchTimeRef.current = now;
+        window.dispatchEvent(
+          new CustomEvent(AppEvents.MESSAGE_CONTENT, { detail: { text: displayText } })
+        );
+      }
+    } else if (displayText !== lastDispatchedRef.current) {
+      lastDispatchedRef.current = displayText;
+      window.dispatchEvent(
+        new CustomEvent(AppEvents.MESSAGE_CONTENT, { detail: { text: displayText } })
+      );
+    }
+  }, [displayText, isStreaming]);
 
   const timestamp = useMemo(() => formatMessageTimestamp(message.created), [message.created]);
   const toolRequests = getToolRequests(message);

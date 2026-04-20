@@ -406,7 +406,7 @@ app.on('open-url', async (_event, url) => {
 app.on('will-finish-launching', () => {
   if (process.platform === 'darwin') {
     app.setAboutPanelOptions({
-      applicationName: 'Goose',
+      applicationName: 'Betterworks',
       applicationVersion: app.getVersion(),
     });
   }
@@ -461,7 +461,7 @@ async function handleFileOpen(filePath: string) {
 
     // Show user-friendly error notification
     new Notification({
-      title: 'Goose',
+      title: 'Betterworks',
       body: `Could not open directory: ${path.basename(filePath)}`,
     }).show();
   }
@@ -892,6 +892,17 @@ const createChat = async (app: App, options: CreateChatOptions = {}) => {
   let formattedUrl = formatUrl(url);
   log.info('Opening URL: ', formattedUrl);
   mainWindow.loadURL(formattedUrl);
+
+  mainWindow.webContents.on('did-fail-load', (_event, _errorCode, errorDescription, validatedURL) => {
+    if (errorDescription === 'ERR_CONNECTION_REFUSED' && validatedURL?.includes('localhost')) {
+      log.info(`Vite dev server not ready (${errorDescription}), retrying in 1s...`);
+      setTimeout(() => {
+        if (!mainWindow.isDestroyed()) {
+          mainWindow.loadURL(formattedUrl);
+        }
+      }, 1000);
+    }
+  });
 
   // If we have an initial message, store it to send after React is ready
   if (initialMessage) {

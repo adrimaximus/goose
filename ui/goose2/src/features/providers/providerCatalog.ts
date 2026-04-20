@@ -421,6 +421,42 @@ export const PROVIDER_CATALOG: ProviderCatalogEntry[] = [
     setupMethod: "local",
     tier: "advanced",
   },
+  {
+    id: "zhipu_ai_coding_plan",
+    displayName: "Zhipu AI Coding Plan",
+    category: "model",
+    description: "GLM models via Zhipu AI Coding Plan (glm-5.1, glm-4.6v)",
+    setupMethod: "single_api_key",
+    envVar: "CUSTOM_ZHIPU_AI_CODING_PLAN_API_KEY",
+    fields: [
+      {
+        key: "CUSTOM_ZHIPU_AI_CODING_PLAN_API_KEY",
+        label: "API Key",
+        secret: true,
+        required: true,
+        placeholder: "Paste your Zhipu AI Coding Plan API key",
+      },
+    ],
+    tier: "promoted",
+  },
+  {
+    id: "minimax",
+    displayName: "MiniMax M2.7",
+    category: "model",
+    description: "MiniMax M2.7 Coding Plan (MiniMax-M2.7, MiniMax-M2.7-highspeed)",
+    setupMethod: "single_api_key",
+    envVar: "MINIMAX_API_KEY",
+    fields: [
+      {
+        key: "MINIMAX_API_KEY",
+        label: "API Key",
+        secret: true,
+        required: true,
+        placeholder: "Paste your MiniMax API key",
+      },
+    ],
+    tier: "promoted",
+  },
 ];
 
 export function getCatalogEntry(

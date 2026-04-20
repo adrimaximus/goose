@@ -37,7 +37,6 @@ export interface NavigationRendererProps {
   onNewChat: () => void;
   onSessionClick: (sessionId: string) => void;
   onFetchSessions: () => void;
-
   // Session status
   getSessionStatus: (sessionId: string) => SessionStatus | undefined;
   clearUnread: (sessionId: string) => void;
@@ -45,6 +44,9 @@ export interface NavigationRendererProps {
   // Chat expand (condensed only, but simpler to keep uniform)
   isChatExpanded: boolean;
   onToggleChatExpanded: () => void;
+
+  // Session reorder
+  onSessionsReordered?: (reorderedSessions: Session[]) => void;
 
   // Drag and drop
   drag: DragHandlers;

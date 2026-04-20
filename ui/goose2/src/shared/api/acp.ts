@@ -8,6 +8,19 @@ import {
 } from "./acpNotificationHandler";
 import { searchSessionsViaExports } from "./sessionSearch";
 
+let _cachedHomeDir: string | null = null;
+
+async function defaultArtifactsDir(): Promise<string> {
+  if (_cachedHomeDir) return `${_cachedHomeDir}/.goose/artifacts`;
+  try {
+    const { getHomeDir } = await import("./system");
+    _cachedHomeDir = await getHomeDir();
+  } catch {
+    _cachedHomeDir = "/tmp";
+  }
+  return `${_cachedHomeDir}/.goose/artifacts`;
+}
+
 export interface AcpProvider {
   id: string;
   label: string;
@@ -95,7 +108,7 @@ export async function acpPrepareSession(
   options: AcpPrepareSessionOptions = {},
 ): Promise<void> {
   if (USE_DIRECT_ACP) {
-    const workingDir = options.workingDir ?? "~/.goose/artifacts";
+    const workingDir = options.workingDir ?? await defaultArtifactsDir();
     await sessionTracker.prepareSession(
       sessionId,
       providerId,
@@ -173,7 +186,7 @@ export async function acpLoadSession(
   workingDir?: string,
 ): Promise<void> {
   if (USE_DIRECT_ACP) {
-    const effectiveWorkingDir = workingDir ?? "~/.goose/artifacts";
+    const effectiveWorkingDir = workingDir ?? await defaultArtifactsDir();
     await directAcp.loadSession(gooseSessionId, effectiveWorkingDir);
     sessionTracker.registerSession(
       sessionId,
