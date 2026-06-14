@@ -130,6 +130,7 @@ type ElectronAPI = {
   getBinaryPath: (binaryName: string) => Promise<string>;
   readFile: (directory: string) => Promise<FileResponse>;
   writeFile: (directory: string, content: string) => Promise<boolean>;
+  saveTempImage: (base64Data: string, mimeType: string) => Promise<string | null>;
   ensureDirectory: (dirPath: string) => Promise<boolean>;
   listFiles: (dirPath: string, extension?: string) => Promise<string[]>;
   getAllowedExtensions: () => Promise<string[]>;
@@ -224,6 +225,8 @@ const electronAPI: ElectronAPI = {
   readFile: (filePath: string) => ipcRenderer.invoke('read-file', filePath),
   writeFile: (filePath: string, content: string) =>
     ipcRenderer.invoke('write-file', filePath, content),
+  saveTempImage: (base64Data: string, mimeType: string) =>
+    ipcRenderer.invoke('save-temp-image', base64Data, mimeType),
   ensureDirectory: (dirPath: string) => ipcRenderer.invoke('ensure-directory', dirPath),
   listFiles: (dirPath: string, extension?: string) =>
     ipcRenderer.invoke('list-files', dirPath, extension),

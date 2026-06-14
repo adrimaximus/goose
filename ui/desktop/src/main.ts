@@ -14,6 +14,7 @@ import {
   screen,
   session,
   shell,
+  systemPreferences,
   Tray,
 } from 'electron';
 import { pathToFileURL, format as formatUrl, URLSearchParams } from 'node:url';
@@ -626,9 +627,14 @@ const createChat = async (app: App, options: CreateChatOptions = {}) => {
     pinnedCertFingerprint = goosedResult.certFingerprint;
   }
 
-  app.on('will-quit', async () => {
+  // Electron does NOT await async will-quit handlers on macOS.
+  // Use event.preventDefault() + app.exit(0) to ensure cleanup actually runs.
+  app.once('will-quit', (event) => {
+    event.preventDefault();
     log.info('App quitting, terminating goosed server');
-    await goosedResult.cleanup();
+    goosedResult.cleanup().finally(() => {
+      app.exit(0);
+    });
   });
 
   const {
@@ -1731,6 +1737,22 @@ ipcMain.handle('write-file', async (_event, filePath, content) => {
   }
 });
 
+ipcMain.handle('save-temp-image', async (_event, base64Data: string, mimeType: string) => {
+  try {
+    const ext = mimeType === 'image/png' ? 'png' : 'jpg';
+    const tempDir = path.join(os.tmpdir(), 'goose-images');
+    await fs.mkdir(tempDir, { recursive: true });
+    const fileName = `img_${Date.now()}_${crypto.randomUUID().slice(0, 8)}.${ext}`;
+    const filePath = path.join(tempDir, fileName);
+    const buffer = Buffer.from(base64Data, 'base64');
+    await fs.writeFile(filePath, buffer);
+    return filePath;
+  } catch (error) {
+    console.error('Error saving temp image:', error);
+    return null;
+  }
+});
+
 // Enhanced file operations
 ipcMain.handle('ensure-directory', async (_event, dirPath) => {
   try {
@@ -1826,17 +1848,33 @@ async function appMain() {
 
   registerUpdateIpcHandlers();
 
-  // Handle microphone permission requests
-  session.defaultSession.setPermissionRequestHandler((_webContents, permission, callback) => {
-    console.log('Permission requested:', permission);
-    // Allow microphone and media access
-    if (permission === 'media') {
-      callback(true);
-    } else {
-      // Default behavior for other permissions
-      callback(true);
+  // Handle microphone permission requests.
+  // Windows use partition 'persist:goose' so we must register the handler
+  // on that session — not on defaultSession (which no window actually uses).
+  const gooseSession = session.fromPartition('persist:goose');
+  type PermissionHandler = Parameters<
+    NonNullable<Parameters<typeof session.defaultSession.setPermissionRequestHandler>[0]>
+  >;
+  const allowAll = (..._args: PermissionHandler) => {
+    const callback = _args[2] as (granted: boolean) => void;
+    callback(true);
+  };
+  gooseSession.setPermissionRequestHandler(allowAll);
+  gooseSession.setPermissionCheckHandler(() => true);
+  session.defaultSession.setPermissionRequestHandler(allowAll);
+  session.defaultSession.setPermissionCheckHandler(() => true);
+
+  // macOS requires explicit system-level microphone permission via TCC.
+  // Without this, getUserMedia() silently gets an empty stream even though
+  // Electron's permission handler says yes.
+  if (process.platform === 'darwin') {
+    const micStatus = systemPreferences.getMediaAccessStatus('microphone');
+    if (micStatus !== 'granted') {
+      systemPreferences.askForMediaAccess('microphone').catch((err) => {
+        log.error('Failed to request microphone access:', err);
+      });
     }
-  });
+  }
 
   // Add CSP headers to all sessions — recomputed on every response so that
   // changes to externalGoosed settings take effect without restarting the app.

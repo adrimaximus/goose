@@ -40,7 +40,7 @@ import {
   trackEditRecipeOpened,
 } from '../utils/analytics';
 import { getNavigationShortcutText } from '../utils/keyboardShortcuts';
-import { UserInput, ImageData } from '../types/message';
+import { UserInput } from '../types/message';
 import { compressImageDataUrl } from '../utils/conversionUtils';
 import { fetchCanonicalModelInfo } from '../utils/canonical';
 import { defineMessages, useIntl } from '../i18n';
@@ -84,7 +84,8 @@ const i18n = defineMessages({
   },
   tooManyTools: {
     id: 'chatInput.tooManyTools',
-    defaultMessage: 'Too many tools can degrade performance.\nTool count: {toolCount} (recommend: {recommended})',
+    defaultMessage:
+      'Too many tools can degrade performance.\nTool count: {toolCount} (recommend: {recommended})',
   },
   viewExtensions: {
     id: 'chatInput.viewExtensions',
@@ -389,7 +390,7 @@ export default function ChatInput({
       if (shouldAutoSubmit && newValue.trim()) {
         trackVoiceDictation('auto_submit');
         setTimeout(() => {
-          performSubmit(newValue);
+          void performSubmit(newValue);
         }, 100);
       } else {
         textAreaRef.current?.focus();
@@ -563,7 +564,10 @@ export default function ChatInput({
     if (toolCount !== null && toolCount > TOOLS_MAX_SUGGESTED) {
       addAlert({
         type: AlertType.Warning,
-        message: intl.formatMessage(i18n.tooManyTools, { toolCount, recommended: TOOLS_MAX_SUGGESTED }),
+        message: intl.formatMessage(i18n.tooManyTools, {
+          toolCount,
+          recommended: TOOLS_MAX_SUGGESTED,
+        }),
         action: {
           text: intl.formatMessage(i18n.viewExtensions),
           onClick: () => setView('extensions'),
@@ -681,38 +685,6 @@ export default function ChatInput({
     }));
   };
 
-  const convertImagesToImageData = useCallback((): ImageData[] => {
-    const pastedImageData: ImageData[] = pastedImages
-      .filter((img) => img.dataUrl && !img.error && !img.isLoading)
-      .map((img) => {
-        const matches = img.dataUrl.match(/^data:([^;]+);base64,(.+)$/);
-        if (matches) {
-          return {
-            data: matches[2],
-            mimeType: matches[1],
-          };
-        }
-        return null;
-      })
-      .filter((img): img is ImageData => img !== null);
-
-    const droppedImageData: ImageData[] = allDroppedFiles
-      .filter((file) => file.isImage && file.dataUrl && !file.error && !file.isLoading)
-      .map((file) => {
-        const matches = file.dataUrl!.match(/^data:([^;]+);base64,(.+)$/);
-        if (matches) {
-          return {
-            data: matches[2],
-            mimeType: matches[1],
-          };
-        }
-        return null;
-      })
-      .filter((img): img is ImageData => img !== null);
-
-    return [...pastedImageData, ...droppedImageData];
-  }, [pastedImages, allDroppedFiles]);
-
   const appendDroppedFilePaths = useCallback(
     (text: string): string => {
       const droppedFilePaths = allDroppedFiles
@@ -720,8 +692,11 @@ export default function ChatInput({
         .map((file) => file.path);
 
       if (droppedFilePaths.length > 0) {
-        const pathsString = droppedFilePaths.join(' ');
-        return text ? `${text} ${pathsString}` : pathsString;
+        const pathsHint =
+          droppedFilePaths.length === 1
+            ? `\n\n[File attached — please read its contents: "${droppedFilePaths[0]}"]`
+            : `\n\n[Files attached — please read their contents: ${droppedFilePaths.map((p) => `"${p}"`).join(', ')}]`;
+        return text ? `${text}${pathsHint}` : pathsHint.trimStart();
       }
       return text;
     },
@@ -789,10 +764,10 @@ export default function ChatInput({
       reader.onload = async (e) => {
         const dataUrl = e.target?.result as string;
         if (dataUrl) {
-          const compressedDataUrl = await compressImageDataUrl(dataUrl);
+          const finalDataUrl = await compressImageDataUrl(dataUrl);
           setPastedImages((prev) =>
             prev.map((img) =>
-              img.id === imageId ? { ...img, dataUrl: compressedDataUrl, isLoading: false } : img
+              img.id === imageId ? { ...img, dataUrl: finalDataUrl, isLoading: false } : img
             )
           );
         }
@@ -908,13 +883,39 @@ export default function ChatInput({
     }
   };
 
-  const handleInterruptionAndQueue = () => {
+  const handleInterruptionAndQueue = async () => {
     if (!isLoading || !hasSubmittableContent) {
       return false;
     }
 
-    const imageData = convertImagesToImageData();
-    const contentToQueue = appendDroppedFilePaths(displayValue.trim());
+    let contentToQueue = appendDroppedFilePaths(displayValue.trim());
+
+    const imagePaths: string[] = [];
+
+    for (const file of allDroppedFiles) {
+      if (file.isImage && file.dataUrl && !file.error && !file.isLoading) {
+        imagePaths.push(file.path);
+      }
+    }
+
+    for (const img of pastedImages) {
+      if (img.dataUrl && !img.error && !img.isLoading) {
+        const matches = img.dataUrl.match(/^data:([^;]+);base64,(.+)$/);
+        if (matches) {
+          try {
+            const savedPath = await window.electron.saveTempImage(matches[2], matches[1]);
+            if (savedPath) imagePaths.push(savedPath);
+          } catch {
+            // Skip failed saves
+          }
+        }
+      }
+    }
+
+    if (imagePaths.length > 0) {
+      const hint = imagePaths.map((p) => `[image: "${p}"]`).join(' ');
+      contentToQueue = contentToQueue ? `${contentToQueue} ${hint}` : hint;
+    }
 
     const interruptionMatch = detectInterruption(displayValue.trim());
 
@@ -923,16 +924,13 @@ export default function ChatInput({
       if (onStop) onStop();
       queuePausedRef.current = true;
 
-      // For interruptions, we need to queue the message to be sent after the stop completes
-      // rather than trying to send it immediately while the system is still loading
       const interruptionMessage: QueuedMessage = {
         id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
         content: contentToQueue,
         timestamp: Date.now(),
-        images: imageData,
+        images: [],
       };
 
-      // Add the interruption message to the front of the queue so it gets sent first
       setQueuedMessages((prev) => [interruptionMessage, ...prev]);
 
       clearInputState();
@@ -943,11 +941,10 @@ export default function ChatInput({
       id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
       content: contentToQueue,
       timestamp: Date.now(),
-      images: imageData,
+      images: [],
     };
     setQueuedMessages((prev) => {
       const newQueue = [...prev, newMessage];
-      // If adding to an empty queue, reset the paused state
       if (prev.length === 0) {
         queuePausedRef.current = false;
         setLastInterruption(null);
@@ -965,11 +962,41 @@ export default function ChatInput({
       allDroppedFiles.some((file) => !file.error && !file.isLoading));
 
   const performSubmit = useCallback(
-    (text?: string) => {
-      const imageData = convertImagesToImageData();
-      const textToSend = appendDroppedFilePaths(text ?? displayValue.trim());
+    async (text?: string) => {
+      let textToSend = appendDroppedFilePaths(text ?? displayValue.trim());
 
-      if (textToSend || imageData.length > 0) {
+      // Collect image paths: dropped images use their file path directly,
+      // pasted images are saved to temp files via IPC.
+      const imagePaths: string[] = [];
+
+      // Dropped images already have a file path
+      for (const file of allDroppedFiles) {
+        if (file.isImage && file.dataUrl && !file.error && !file.isLoading) {
+          imagePaths.push(file.path);
+        }
+      }
+
+      // Pasted images need to be saved to temp files
+      for (const img of pastedImages) {
+        if (img.dataUrl && !img.error && !img.isLoading) {
+          const matches = img.dataUrl.match(/^data:([^;]+);base64,(.+)$/);
+          if (matches) {
+            try {
+              const savedPath = await window.electron.saveTempImage(matches[2], matches[1]);
+              if (savedPath) imagePaths.push(savedPath);
+            } catch {
+              // Skip failed saves
+            }
+          }
+        }
+      }
+
+      if (imagePaths.length > 0) {
+        const hint = imagePaths.map((p) => `[image: "${p}"]`).join(' ');
+        textToSend = textToSend ? `${textToSend} ${hint}` : hint;
+      }
+
+      if (textToSend) {
         // Store original message in history
         if (displayValue.trim()) {
           LocalMessageStorage.addMessage(displayValue);
@@ -982,7 +1009,7 @@ export default function ChatInput({
           }
         }
 
-        handleSubmit({ msg: textToSend, images: imageData });
+        handleSubmit({ msg: textToSend, images: [] });
 
         // Auto-resume queue after sending a NON-interruption message (if it was paused due to interruption)
         if (
@@ -1003,10 +1030,10 @@ export default function ChatInput({
       }
     },
     [
-      convertImagesToImageData,
       appendDroppedFilePaths,
       displayValue,
       allDroppedFiles,
+      pastedImages,
       handleSubmit,
       lastInterruption,
       clearInputState,
@@ -1064,20 +1091,18 @@ export default function ChatInput({
       evt.preventDefault();
 
       // Handle interruption and queue logic
-      if (handleInterruptionAndQueue()) {
-        return;
-      }
-
-      if (canSubmit) {
-        performSubmit();
-      }
+      void handleInterruptionAndQueue().then((queued) => {
+        if (!queued && canSubmit) {
+          void performSubmit();
+        }
+      });
     }
   };
 
   const onFormSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (isLoading && hasSubmittableContent) {
-      handleInterruptionAndQueue();
+      void handleInterruptionAndQueue();
       return;
     }
     const canSubmit =
@@ -1086,7 +1111,7 @@ export default function ChatInput({
         pastedImages.some((img) => img.dataUrl && !img.error && !img.isLoading) ||
         allDroppedFiles.some((file) => !file.error && !file.isLoading));
     if (canSubmit) {
-      performSubmit();
+      void performSubmit();
     }
   };
 
@@ -1130,11 +1155,11 @@ export default function ChatInput({
       reader.onload = async (evt) => {
         const dataUrl = evt.target?.result as string;
         if (dataUrl) {
-          const compressedDataUrl = await compressImageDataUrl(dataUrl);
+          const finalDataUrl = await compressImageDataUrl(dataUrl);
           setPastedImages((prev) =>
             prev.map((img) =>
               img.id === uniqueId
-                ? { ...img, dataUrl: compressedDataUrl, isLoading: false, error: undefined }
+                ? { ...img, dataUrl: finalDataUrl, isLoading: false, error: undefined }
                 : img
             )
           );
@@ -1324,7 +1349,6 @@ export default function ChatInput({
               minHeight: `${minTextareaHeight}px`,
               maxHeight: `${maxHeight}px`,
               overflowY: 'auto',
-
             }}
             className="w-full outline-none border-none focus:ring-0 bg-transparent px-3 pt-3 pb-1.5 text-sm resize-none text-text-primary placeholder:text-text-secondary"
           />
@@ -1551,7 +1575,9 @@ export default function ChatInput({
                     <p className="text-sm text-text-primary truncate" title={file.name}>
                       {file.name}
                     </p>
-                    <p className="text-xs text-text-secondary">{file.type || intl.formatMessage(i18n.unknownType)}</p>
+                    <p className="text-xs text-text-secondary">
+                      {file.type || intl.formatMessage(i18n.unknownType)}
+                    </p>
                   </div>
                 </div>
               )}
@@ -1667,7 +1693,9 @@ export default function ChatInput({
                     </Button>
                   </TooltipTrigger>
                   <TooltipContent>
-                    {recipe ? intl.formatMessage(i18n.viewEditRecipe) : intl.formatMessage(i18n.createRecipeFromSession)}
+                    {recipe
+                      ? intl.formatMessage(i18n.viewEditRecipe)
+                      : intl.formatMessage(i18n.createRecipeFromSession)}
                   </TooltipContent>
                 </Tooltip>
               </div>
