@@ -67,6 +67,7 @@ pub struct OpenAiProvider {
     name: String,
     custom_models: Option<Vec<String>>,
     skip_canonical_filtering: bool,
+    dynamic_models: bool,
 }
 
 impl OpenAiProvider {
@@ -130,6 +131,7 @@ impl OpenAiProvider {
             name: OPEN_AI_PROVIDER_NAME.to_string(),
             custom_models: None,
             skip_canonical_filtering: false,
+            dynamic_models: true,
         })
     }
 
@@ -146,6 +148,7 @@ impl OpenAiProvider {
             name: OPEN_AI_PROVIDER_NAME.to_string(),
             custom_models: None,
             skip_canonical_filtering: false,
+            dynamic_models: true,
         }
     }
 
@@ -238,6 +241,7 @@ impl OpenAiProvider {
             name: config.name.clone(),
             custom_models,
             skip_canonical_filtering: config.skip_canonical_filtering,
+            dynamic_models: config.dynamic_models.unwrap_or(true),
         })
     }
 
@@ -435,17 +439,19 @@ impl Provider for OpenAiProvider {
 
     async fn fetch_supported_models(&self) -> Result<Vec<String>, ProviderError> {
         if let Some(custom_models) = &self.custom_models {
+            if !self.dynamic_models {
+                return Ok(custom_models.clone());
+            }
             match self.fetch_models_from_api().await {
                 Ok(models) => return Ok(models),
-                Err(e) if e.is_endpoint_not_found() => {
+                Err(e) => {
                     tracing::debug!(
-                        "Models endpoint not implemented for provider '{}' ({}), using predefined list",
+                        "Could not fetch models from API for provider '{}' ({}), using predefined list",
                         self.name,
                         e
                     );
                     return Ok(custom_models.clone());
                 }
-                Err(e) => return Err(e),
             }
         }
 
@@ -678,6 +684,7 @@ mod tests {
             name: name.to_string(),
             custom_models: None,
             skip_canonical_filtering: false,
+            dynamic_models: true,
         }
     }
 
