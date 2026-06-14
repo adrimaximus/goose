@@ -240,7 +240,7 @@ export type DeleteRecipeRequest = {
     id: string;
 };
 
-export type DictationProvider = 'openai' | 'elevenlabs' | 'groq' | 'local';
+export type DictationProvider = 'openai' | 'elevenlabs' | 'groq' | 'soniox' | 'local';
 
 export type DictationProviderStatus = {
     /**
@@ -662,7 +662,7 @@ export type Message = {
     content: Array<MessageContent>;
     created: number;
     id?: string | null;
-    metadata: MessageMetadata;
+    metadata?: MessageMetadata;
     role: Role;
 };
 
@@ -1534,6 +1534,10 @@ export type TranscribeRequest = {
      */
     mime_type: string;
     provider: DictationProvider;
+    /**
+     * Optional language hint (e.g. "id", "en") for transcription accuracy
+     */
+    language?: string;
 };
 
 export type TranscribeResponse = {

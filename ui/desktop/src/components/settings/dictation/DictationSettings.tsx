@@ -18,6 +18,27 @@ import {
 } from '../../ui/dropdown-menu';
 import { defineMessages, useIntl } from '../../../i18n';
 
+const LANGUAGES = [
+  { code: 'id', label: 'Indonesian' },
+  { code: 'en', label: 'English' },
+  { code: 'es', label: 'Spanish' },
+  { code: 'fr', label: 'French' },
+  { code: 'de', label: 'German' },
+  { code: 'it', label: 'Italian' },
+  { code: 'pt', label: 'Portuguese' },
+  { code: 'nl', label: 'Dutch' },
+  { code: 'ru', label: 'Russian' },
+  { code: 'ja', label: 'Japanese' },
+  { code: 'ko', label: 'Korean' },
+  { code: 'zh', label: 'Chinese' },
+  { code: 'ar', label: 'Arabic' },
+  { code: 'hi', label: 'Hindi' },
+  { code: 'th', label: 'Thai' },
+  { code: 'vi', label: 'Vietnamese' },
+  { code: 'ms', label: 'Malay' },
+  { code: 'tr', label: 'Turkish' },
+];
+
 const i18n = defineMessages({
   voiceDictationProvider: {
     id: 'dictationSettings.voiceDictationProvider',
@@ -79,6 +100,14 @@ const i18n = defineMessages({
     id: 'dictationSettings.cancel',
     defaultMessage: 'Cancel',
   },
+  language: {
+    id: 'dictationSettings.language',
+    defaultMessage: 'Language',
+  },
+  languageDescription: {
+    id: 'dictationSettings.languageDescription',
+    defaultMessage: 'Set the spoken language for better accuracy (or auto-detect)',
+  },
 });
 
 export const DictationSettings = () => {
@@ -91,6 +120,7 @@ export const DictationSettings = () => {
   const [preferredMic, setPreferredMic] = useState<string | null>(null);
   const [apiKey, setApiKey] = useState('');
   const [isEditingKey, setIsEditingKey] = useState(false);
+  const [language, setLanguage] = useState<string>('auto');
   const { read, upsert, remove } = useConfig();
 
   const refreshStatuses = async () => {
@@ -124,6 +154,9 @@ export const DictationSettings = () => {
       const micValue = await read('voice_dictation_preferred_mic', false);
       setPreferredMic((micValue as string) || null);
 
+      const langValue = await read('voice_dictation_language', false);
+      setLanguage((langValue as string) || 'auto');
+
       await refreshStatuses();
     };
 
@@ -140,6 +173,11 @@ export const DictationSettings = () => {
   const handleMicChange = (deviceId: string | null) => {
     setPreferredMic(deviceId);
     upsert('voice_dictation_preferred_mic', deviceId || '', false);
+  };
+
+  const handleLanguageChange = (lang: string) => {
+    setLanguage(lang);
+    upsert('voice_dictation_language', lang, false);
   };
 
   const handleSaveKey = async () => {
@@ -281,6 +319,33 @@ export const DictationSettings = () => {
           )}
 
           <MicrophoneSelector selectedDeviceId={preferredMic} onDeviceChange={handleMicChange} />
+
+          <div className="py-2 px-2 hover:bg-background-secondary rounded-xl transition-all">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-text-primary">{intl.formatMessage(i18n.language)}</h3>
+                <p className="text-xs text-text-secondary max-w-md mt-[2px]">
+                  {intl.formatMessage(i18n.languageDescription)}
+                </p>
+              </div>
+              <DropdownMenu>
+                <DropdownMenuTrigger className="flex items-center gap-2 px-3 py-1.5 text-sm border border-border-primary rounded-md hover:border-border-primary transition-colors text-text-primary bg-background-primary">
+                  {language === 'auto' ? 'Auto-detect' : LANGUAGES.find(l => l.code === language)?.label || language}
+                  <ChevronDown className="w-4 h-4" />
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="max-h-[300px] overflow-y-auto">
+                  <DropdownMenuRadioGroup value={language} onValueChange={handleLanguageChange}>
+                    <DropdownMenuRadioItem value="auto">Auto-detect</DropdownMenuRadioItem>
+                    {LANGUAGES.map((lang) => (
+                      <DropdownMenuRadioItem key={lang.code} value={lang.code}>
+                        {lang.label}
+                      </DropdownMenuRadioItem>
+                    ))}
+                  </DropdownMenuRadioGroup>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          </div>
         </>
       )}
     </div>

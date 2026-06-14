@@ -59,7 +59,7 @@ export function buildCSP(externalGoosed?: ExternalGoosedConfig): string {
   return (
     "default-src 'self';" +
     "style-src 'self' 'unsafe-inline';" +
-    "script-src 'self' 'unsafe-inline';" +
+    "script-src 'self' 'unsafe-inline' blob:;" +
     "img-src 'self' data: https:;" +
     `connect-src ${connectSrc};` +
     "object-src 'none';" +
@@ -69,7 +69,7 @@ export function buildCSP(externalGoosed?: ExternalGoosedConfig): string {
     "form-action 'none';" +
     "base-uri 'self';" +
     "manifest-src 'self';" +
-    "worker-src 'self';" +
+    "worker-src 'self' blob:;" +
     upgradeDirective
   );
 }

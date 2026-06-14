@@ -12,7 +12,7 @@ use base64::{engine::general_purpose::STANDARD as BASE64, Engine};
 #[cfg(feature = "local-inference")]
 use goose::dictation::providers::transcribe_local;
 use goose::dictation::providers::{
-    all_providers, is_configured, transcribe_with_provider, DictationProvider,
+    all_providers, is_configured, transcribe_soniox, transcribe_with_provider, DictationProvider,
 };
 #[cfg(feature = "local-inference")]
 use goose::dictation::whisper;
@@ -43,6 +43,9 @@ pub struct TranscribeRequest {
     pub mime_type: String,
     /// Transcription provider to use
     pub provider: DictationProvider,
+    /// Optional language hint (e.g. "id", "en") for transcription accuracy
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub language: Option<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize, ToSchema)]
@@ -155,6 +158,7 @@ pub async fn transcribe_dictation(
             audio_bytes,
             extension,
             &request.mime_type,
+            request.language.as_deref(),
         )
         .await
         .map_err(convert_error)?,
@@ -165,6 +169,7 @@ pub async fn transcribe_dictation(
             audio_bytes,
             extension,
             &request.mime_type,
+            request.language.as_deref(),
         )
         .await
         .map_err(convert_error)?,
@@ -175,9 +180,15 @@ pub async fn transcribe_dictation(
             audio_bytes,
             extension,
             &request.mime_type,
+            request.language.as_deref(),
         )
         .await
         .map_err(convert_error)?,
+        DictationProvider::Soniox => {
+            transcribe_soniox(audio_bytes, &request.mime_type, request.language.as_deref())
+                .await
+                .map_err(convert_error)?
+        }
         #[cfg(feature = "local-inference")]
         DictationProvider::Local => transcribe_local(audio_bytes).await.map_err(convert_error)?,
     };

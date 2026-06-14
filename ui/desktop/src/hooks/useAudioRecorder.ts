@@ -16,9 +16,33 @@ const MIN_SPEECH_MS = 200;
 // without clipping early speech onsets. Determined empirically for 16kHz mono input.
 const RMS_THRESHOLD = 0.015;
 
-// Resolve worklet URL at runtime from window.location so it works under both
-// the dev server (http://localhost) and packaged builds (file://).
-const WORKLET_URL = new URL('audio-capture-worklet.js', window.location.href.split('#')[0]).href;
+// AudioWorklet source inlined directly so it works in all environments
+// (dev server http://, production file://, asar builds) without needing to
+// fetch or load an external file — both fetch() and addModule() fail under
+// file:// protocol inside Electron's asar packaging.
+const WORKLET_SOURCE = `
+class AudioCaptureProcessor extends AudioWorkletProcessor {
+  process(inputs) {
+    const ch = inputs[0]?.[0];
+    if (ch?.length > 0) {
+      this.port.postMessage(new Float32Array(ch));
+    }
+    return true;
+  }
+}
+registerProcessor('audio-capture', AudioCaptureProcessor);
+`;
+
+// Cache the blob URL so we only create it once per session.
+let _workletBlobUrl: string | null = null;
+
+function getWorkletBlobUrl(): string {
+  if (!_workletBlobUrl) {
+    const blob = new Blob([WORKLET_SOURCE], { type: 'application/javascript' });
+    _workletBlobUrl = URL.createObjectURL(blob);
+  }
+  return _workletBlobUrl;
+}
 
 function encodeWav(samples: Float32Array, sampleRate: number): ArrayBuffer {
   const buf = new ArrayBuffer(44 + samples.length * 2);
@@ -121,8 +145,15 @@ export const useAudioRecorder = ({ onTranscription, onError }: UseAudioRecorderO
     try {
       const wav = new Blob([encodeWav(samples, SAMPLE_RATE)], { type: 'audio/wav' });
       const base64 = await blobToBase64(wav);
+      const langValue = await read('voice_dictation_language', false);
+      const lang = (langValue as string) || 'auto';
       const result = await transcribeDictation({
-        body: { audio: base64, mime_type: 'audio/wav', provider: prov },
+        body: {
+          audio: base64,
+          mime_type: 'audio/wav',
+          provider: prov,
+          ...(lang !== 'auto' ? { language: lang } : {}),
+        },
         throwOnError: true,
       });
       if (result.data?.text) {
@@ -209,7 +240,7 @@ export const useAudioRecorder = ({ onTranscription, onError }: UseAudioRecorderO
         noiseSuppression: true,
         autoGainControl: true,
       };
-      if (preferredMic && typeof preferredMic === 'string') {
+      if (preferredMic && typeof preferredMic === 'string' && preferredMic !== 'default') {
         audioConstraints.deviceId = { exact: preferredMic };
       }
 
@@ -233,19 +264,30 @@ export const useAudioRecorder = ({ onTranscription, onError }: UseAudioRecorderO
       const ctx = new AudioContext({ sampleRate: SAMPLE_RATE });
       audioContextRef.current = ctx;
 
-      await ctx.audioWorklet.addModule(WORKLET_URL);
-
       const source = ctx.createMediaStreamSource(stream);
-      const worklet = new AudioWorkletNode(ctx, 'audio-capture');
 
-      worklet.port.onmessage = (e: MessageEvent<Float32Array>) => handleSamples(e.data);
-
-      // Connect through silent gain to keep worklet processing alive
-      const silence = ctx.createGain();
-      silence.gain.value = 0;
-      source.connect(worklet);
-      worklet.connect(silence);
-      silence.connect(ctx.destination);
+      // Try AudioWorklet first (modern API). In Electron, CSP may block the
+      // blob: URL worklet module — fall back to ScriptProcessorNode which
+      // requires no module loading and works universally.
+      try {
+        await ctx.audioWorklet.addModule(getWorkletBlobUrl());
+        const worklet = new AudioWorkletNode(ctx, 'audio-capture');
+        worklet.port.onmessage = (e: MessageEvent<Float32Array>) => handleSamples(e.data);
+        const silence = ctx.createGain();
+        silence.gain.value = 0;
+        source.connect(worklet);
+        worklet.connect(silence);
+        silence.connect(ctx.destination);
+      } catch (workletErr) {
+        console.warn('[useAudioRecorder] AudioWorklet unavailable, using ScriptProcessorNode fallback');
+        const processor = ctx.createScriptProcessor(4096, 1, 1);
+        processor.onaudioprocess = (e: AudioProcessingEvent) => {
+          const input = e.inputBuffer.getChannelData(0);
+          handleSamples(new Float32Array(input));
+        };
+        source.connect(processor);
+        processor.connect(ctx.destination);
+      }
 
       setIsRecording(true);
     } catch (error) {

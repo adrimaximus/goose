@@ -25,6 +25,7 @@ pub enum DictationProvider {
     OpenAI,
     ElevenLabs,
     Groq,
+    Soniox,
     #[cfg(feature = "local-inference")]
     Local,
 }
@@ -68,6 +69,16 @@ pub const PROVIDERS: &[DictationProviderDef] = &[
         endpoint_path: "v1/speech-to-text",
         host_key: None,
         description: "Uses ElevenLabs speech-to-text API for advanced voice processing.",
+        uses_provider_config: false,
+        settings_path: None,
+    },
+    DictationProviderDef {
+        provider: DictationProvider::Soniox,
+        config_key: "SONIOX_API_KEY",
+        default_base_url: "https://api.soniox.com",
+        endpoint_path: "v1/speech-to-text",
+        host_key: None,
+        description: "Ultra-fast streaming speech recognition with high accuracy.",
         uses_provider_config: false,
         settings_path: None,
     },
@@ -205,6 +216,7 @@ fn build_api_client(provider: DictationProvider) -> Result<ApiClient> {
             header_name: "xi-api-key".to_string(),
             key: api_key,
         },
+        DictationProvider::Soniox => AuthMethod::BearerToken(api_key),
         #[cfg(feature = "local-inference")]
         DictationProvider::Local => anyhow::bail!("Local provider should not use API client"),
     };
@@ -215,6 +227,187 @@ fn build_api_client(provider: DictationProvider) -> Result<ApiClient> {
     })
 }
 
+const SONIOX_BASE_URL: &str = "https://api.soniox.com";
+const SONIOX_MODEL: &str = "stt-async-v5";
+const SONIOX_POLL_INTERVAL: Duration = Duration::from_millis(500);
+const SONIOX_POLL_TIMEOUT: Duration = Duration::from_secs(60);
+
+/// Transcribe audio using Soniox async speech-to-text API (v2).
+/// Flow: upload file → create transcription → poll → get transcript.
+pub async fn transcribe_soniox(
+    audio_bytes: Vec<u8>,
+    mime_type: &str,
+    language: Option<&str>,
+) -> Result<String> {
+    let config = Config::global();
+    let api_key = config.get_secret::<String>("SONIOX_API_KEY").map_err(|e| {
+        tracing::error!("SONIOX_API_KEY not configured: {}", e);
+        anyhow::anyhow!("SONIOX_API_KEY not configured")
+    })?;
+
+    let client = reqwest::Client::builder()
+        .timeout(Duration::from_secs(120))
+        .build()?;
+
+    let extension = match mime_type {
+        "audio/wav" | "audio/x-wav" => "wav",
+        "audio/webm" | "audio/webm;codecs=opus" => "webm",
+        "audio/mp4" => "mp4",
+        "audio/mpeg" | "audio/mpga" => "mp3",
+        "audio/m4a" => "m4a",
+        _ => "wav",
+    };
+
+    // Step 1: Upload audio file
+    let part = reqwest::multipart::Part::bytes(audio_bytes)
+        .file_name(format!("audio.{}", extension))
+        .mime_str(mime_type)
+        .map_err(|e| anyhow::anyhow!(e))?;
+
+    let upload_form = reqwest::multipart::Form::new().part("file", part);
+
+    let upload_resp = client
+        .post(format!("{}/v1/files", SONIOX_BASE_URL))
+        .header("Authorization", format!("Bearer {}", api_key))
+        .multipart(upload_form)
+        .send()
+        .await
+        .map_err(|e| {
+            tracing::error!("Soniox upload failed: {}", e);
+            e
+        })?;
+
+    if !upload_resp.status().is_success() {
+        let status = upload_resp.status();
+        let error_text = upload_resp.text().await.unwrap_or_default();
+        if status == 401 || error_text.contains("Invalid API key") {
+            anyhow::bail!("Invalid API key");
+        } else if status == 429 {
+            anyhow::bail!("Rate limit exceeded");
+        } else {
+            anyhow::bail!("Soniox upload error: {}", error_text);
+        }
+    }
+
+    let upload_data: serde_json::Value = upload_resp.json().await.map_err(|e| {
+        tracing::error!("Failed to parse Soniox upload response: {}", e);
+        anyhow::anyhow!(e)
+    })?;
+
+    let file_id = upload_data["id"]
+        .as_str()
+        .ok_or_else(|| anyhow::anyhow!("Missing 'id' field in Soniox upload response"))?;
+
+    // Step 2: Create transcription
+    let mut create_body = serde_json::json!({
+        "model": SONIOX_MODEL,
+        "file_id": file_id,
+    });
+
+    if let Some(lang) = language {
+        create_body["language"] = serde_json::Value::String(lang.to_string());
+    }
+
+    let create_resp = client
+        .post(format!("{}/v1/transcriptions", SONIOX_BASE_URL))
+        .header("Authorization", format!("Bearer {}", api_key))
+        .json(&create_body)
+        .send()
+        .await
+        .map_err(|e| {
+            tracing::error!("Soniox create transcription failed: {}", e);
+            e
+        })?;
+
+    if !create_resp.status().is_success() {
+        let error_text = create_resp.text().await.unwrap_or_default();
+        anyhow::bail!("Soniox create error: {}", error_text);
+    }
+
+    let create_data: serde_json::Value = create_resp.json().await.map_err(|e| {
+        tracing::error!("Failed to parse Soniox create response: {}", e);
+        anyhow::anyhow!(e)
+    })?;
+
+    let transcription_id = create_data["id"]
+        .as_str()
+        .ok_or_else(|| anyhow::anyhow!("Missing 'id' field in Soniox create response"))?;
+
+    // Step 3: Poll until completed
+    let deadline = tokio::time::Instant::now() + SONIOX_POLL_TIMEOUT;
+    loop {
+        if tokio::time::Instant::now() > deadline {
+            anyhow::bail!("Soniox transcription timed out");
+        }
+
+        tokio::time::sleep(SONIOX_POLL_INTERVAL).await;
+
+        let status_resp = client
+            .get(format!(
+                "{}/v1/transcriptions/{}",
+                SONIOX_BASE_URL, transcription_id
+            ))
+            .header("Authorization", format!("Bearer {}", api_key))
+            .send()
+            .await
+            .map_err(|e| {
+                tracing::error!("Soniox poll failed: {}", e);
+                e
+            })?;
+
+        if !status_resp.status().is_success() {
+            continue;
+        }
+
+        let status_data: serde_json::Value = status_resp.json().await?;
+
+        match status_data["status"].as_str() {
+            Some("completed") => break,
+            Some("error") | Some("failed") => {
+                anyhow::bail!(
+                    "Soniox transcription failed: {}",
+                    status_data
+                        .get("error")
+                        .and_then(|e| e.as_str())
+                        .unwrap_or("unknown")
+                );
+            }
+            _ => continue,
+        }
+    }
+
+    // Step 4: Get transcript
+    let transcript_resp = client
+        .get(format!(
+            "{}/v1/transcriptions/{}/transcript",
+            SONIOX_BASE_URL, transcription_id
+        ))
+        .header("Authorization", format!("Bearer {}", api_key))
+        .send()
+        .await
+        .map_err(|e| {
+            tracing::error!("Soniox get transcript failed: {}", e);
+            e
+        })?;
+
+    if !transcript_resp.status().is_success() {
+        let error_text = transcript_resp.text().await.unwrap_or_default();
+        anyhow::bail!("Soniox transcript error: {}", error_text);
+    }
+
+    let transcript_data: serde_json::Value = transcript_resp.json().await.map_err(|e| {
+        tracing::error!("Failed to parse Soniox transcript response: {}", e);
+        anyhow::anyhow!(e)
+    })?;
+
+    let text = transcript_data["text"]
+        .as_str()
+        .ok_or_else(|| anyhow::anyhow!("Missing 'text' field in Soniox transcript response"))?
+        .to_string();
+
+    Ok(text)
+}
+
 pub async fn transcribe_with_provider(
     provider: DictationProvider,
     model_param: String,
@@ -222,6 +415,7 @@ pub async fn transcribe_with_provider(
     audio_bytes: Vec<u8>,
     extension: &str,
     mime_type: &str,
+    language: Option<&str>,
 ) -> Result<String> {
     let client = build_api_client(provider)?;
     let def = get_provider_def(provider);
@@ -234,9 +428,13 @@ pub async fn transcribe_with_provider(
             anyhow::anyhow!(e)
         })?;
 
-    let form = reqwest::multipart::Form::new()
+    let mut form = reqwest::multipart::Form::new()
         .part("file", part)
         .text(model_param, model_value);
+
+    if let Some(lang) = language {
+        form = form.text("language", lang.to_string());
+    }
 
     let response = client
         .request(None, def.endpoint_path)

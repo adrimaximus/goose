@@ -128,7 +128,7 @@ describe('buildCSP', () => {
     };
     const csp = buildCSP(config);
     expect(csp).toContain("default-src 'self'");
-    expect(csp).toContain("script-src 'self' 'unsafe-inline'");
+    expect(csp).toContain("script-src 'self' 'unsafe-inline' blob:");
     expect(csp).toContain('connect-src');
     expect(csp).toContain("object-src 'none'");
   });

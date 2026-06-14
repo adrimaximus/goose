@@ -4771,6 +4771,7 @@
           "openai",
           "elevenlabs",
           "groq",
+          "soniox",
           "local"
         ]
       },
@@ -5898,8 +5899,7 @@
         "required": [
           "role",
           "created",
-          "content",
-          "metadata"
+          "content"
         ],
         "properties": {
           "content": {
@@ -8698,6 +8698,10 @@
           },
           "provider": {
             "$ref": "#/components/schemas/DictationProvider"
+          },
+          "language": {
+            "type": "string",
+            "description": "Optional language hint (e.g. \"id\", \"en\") for transcription accuracy"
           }
         }
       },
