@@ -33,6 +33,13 @@ pub const OLLAMA_KNOWN_MODELS: &[&str] = &[
     "qwen3-vl",
     "qwen3-coder:30b",
     "qwen3-coder:480b-cloud",
+    "qwen3.6:27b",
+    "qwen3.6:35b-a3b",
+    "qwen3.6-heretic:35b-a3b",
+    "qwen2.5-coder:32b",
+    "qwen2.5:32b",
+    "llama3.3:70b",
+    "gemma4:e4b",
 ];
 pub const OLLAMA_DOC_URL: &str = "https://ollama.com/library";
 
@@ -158,7 +165,7 @@ impl OllamaProvider {
             model,
             supports_streaming: true,
             name: OLLAMA_PROVIDER_NAME.to_string(),
-            skip_canonical_filtering: false,
+            skip_canonical_filtering: true,
         })
     }
 
@@ -295,7 +302,7 @@ impl Provider for OllamaProvider {
             system,
             messages,
             tools,
-            &ImageFormat::OpenAi,
+            &ImageFormat::OpenAiCompat,
             true,
         )?;
         apply_ollama_options(&mut payload, model_config);
@@ -317,6 +324,19 @@ impl Provider for OllamaProvider {
     }
 
     async fn fetch_supported_models(&self) -> Result<Vec<String>, ProviderError> {
+        // Try live API first, fall back to known models if unreachable
+        match self.try_fetch_live_models().await {
+            Ok(models) => Ok(models),
+            Err(_) => {
+                // Server unreachable — return known models as fallback so UI always shows options
+                Ok(OLLAMA_KNOWN_MODELS.iter().map(|s| s.to_string()).collect())
+            }
+        }
+    }
+}
+
+impl OllamaProvider {
+    async fn try_fetch_live_models(&self) -> Result<Vec<String>, ProviderError> {
         let response = self
             .api_client
             .request(None, "api/tags")

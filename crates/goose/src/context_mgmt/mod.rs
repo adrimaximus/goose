@@ -330,19 +330,86 @@ async fn do_compact(
                 if matches!(e, ProviderError::ContextLengthExceeded(_)) {
                     if attempt < removal_percentages.len() - 1 {
                         continue;
-                    } else {
-                        return Err(anyhow::anyhow!(
-                            "Failed to compact: context limit exceeded even after removing all tool responses"
-                        ));
                     }
+                } else {
+                    return Err(e.into());
                 }
+            }
+        }
+    }
+
+    // Fallback: all progressive removal attempts failed (even at 100% tool response removal).
+    // The conversation is so large that even without tool responses, it exceeds the model's context limit.
+    // Strategy: keep only the most recent messages, discarding older ones to fit within context.
+    warn!("Compaction: progressive removal exhausted, attempting truncation of older messages");
+
+    // Try keeping progressively fewer recent messages until summarization succeeds
+    let keep_counts = [
+        agent_visible_messages.len() / 2,
+        agent_visible_messages.len() / 4,
+        20,
+        10,
+    ];
+
+    for &keep_count in &keep_counts {
+        if keep_count >= agent_visible_messages.len() {
+            continue;
+        }
+
+        let truncated: Vec<&Message> = agent_visible_messages
+            .iter()
+            .skip(agent_visible_messages.len() - keep_count)
+            .collect();
+
+        let messages_text = format!(
+            "[... earlier messages truncated to fit context ...]\n\n{}",
+            truncated
+                .iter()
+                .map(|msg| format_message_for_compacting(msg))
+                .collect::<Vec<_>>()
+                .join("\n")
+        );
+
+        let context = SummarizeContext {
+            messages: messages_text,
+        };
+
+        let system_prompt = render_template("compaction.md", &context)?;
+
+        let user_message = Message::user()
+            .with_text("Please summarize the conversation history provided in the system prompt. Note that earlier messages were truncated.");
+        let summarization_request = vec![user_message];
+
+        match provider
+            .complete_fast(session_id, &system_prompt, &summarization_request, &[])
+            .await
+        {
+            Ok((mut response, mut provider_usage)) => {
+                response.role = Role::User;
+
+                provider_usage
+                    .ensure_tokens(&system_prompt, &summarization_request, &response, &[])
+                    .await
+                    .map_err(|e| anyhow::anyhow!("Failed to ensure usage tokens: {}", e))?;
+
+                info!(
+                    "Compaction succeeded with truncated messages (kept {} of {})",
+                    keep_count,
+                    agent_visible_messages.len()
+                );
+                return Ok((response, provider_usage));
+            }
+            Err(ProviderError::ContextLengthExceeded(_)) => {
+                continue;
+            }
+            Err(e) => {
                 return Err(e.into());
             }
         }
     }
 
     Err(anyhow::anyhow!(
-        "Unexpected: exhausted all attempts without returning"
+        "Failed to compact: context limit exceeded even after truncating to 10 most recent messages"
     ))
 }
 

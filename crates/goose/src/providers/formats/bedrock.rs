@@ -352,7 +352,7 @@ pub fn from_bedrock_tool_result_content_block(
                 code: ErrorCode::INTERNAL_ERROR,
                 message: Cow::from("Unsupported tool result from Bedrock".to_string()),
                 data: None,
-            })
+            });
         }
     })
 }

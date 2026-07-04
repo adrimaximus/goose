@@ -282,7 +282,19 @@ impl ApiClient {
     }
 
     pub fn with_timeout(host: String, auth: AuthMethod, timeout: Duration) -> Result<Self> {
-        let mut client_builder = Client::builder().timeout(timeout);
+        // Use connect_timeout + read_timeout instead of timeout (total).
+        // reqwest .timeout() is TOTAL (connect + send + read entire body) which kills
+        // long-running streaming responses (e.g. M3 thinking for 10+ minutes).
+        // .read_timeout() is per-read-operation, so streaming can run indefinitely
+        // as long as each individual read completes within the timeout.
+        let mut client_builder = Client::builder()
+            .connect_timeout(Duration::from_secs(30))
+            .read_timeout(timeout)
+            .no_gzip()
+            .no_brotli()
+            .no_deflate()
+            .no_zstd()
+            .http1_only();
 
         // Configure TLS if needed
         let tls_config = TlsConfig::from_config()?;
@@ -305,8 +317,14 @@ impl ApiClient {
 
     fn rebuild_client(&mut self) -> Result<()> {
         let mut client_builder = Client::builder()
-            .timeout(self.timeout)
-            .default_headers(self.default_headers.clone());
+            .connect_timeout(Duration::from_secs(30))
+            .read_timeout(self.timeout)
+            .default_headers(self.default_headers.clone())
+            .no_gzip()
+            .no_brotli()
+            .no_deflate()
+            .no_zstd()
+            .http1_only();
 
         // Configure TLS if needed
         if let Some(ref tls_config) = self.tls_config {

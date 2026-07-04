@@ -1319,6 +1319,100 @@ async fn import_app(
     ))
 }
 
+#[derive(Deserialize, utoipa::ToSchema)]
+pub struct FindOrCreateGatewaySessionRequest {
+    /// Session name (e.g. "whatsapp/6281310481951") — used as dedup key
+    pub name: String,
+    /// Working directory for the session (optional, defaults to home dir)
+    pub working_dir: Option<String>,
+}
+
+#[derive(Serialize, utoipa::ToSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct GatewaySessionResponse {
+    pub session_id: String,
+    pub created: bool,
+}
+
+/// Find an existing Gateway session by name, or create one if none exists.
+/// Idempotent — safe to call on every incoming message.
+async fn find_or_create_gateway_session(
+    State(state): State<Arc<AppState>>,
+    Json(payload): Json<FindOrCreateGatewaySessionRequest>,
+) -> Result<Json<GatewaySessionResponse>, ErrorResponse> {
+    let manager = state.session_manager();
+
+    // Look for an existing non-archived gateway session with this name
+    let existing = manager
+        .list_sessions_by_types(&[goose::session::session_manager::SessionType::Gateway])
+        .await
+        .map_err(|e| ErrorResponse {
+            message: format!("Failed to list sessions: {}", e),
+            status: StatusCode::INTERNAL_SERVER_ERROR,
+        })?;
+
+    if let Some(session) = existing
+        .into_iter()
+        .find(|s| s.name == payload.name && s.archived_at.is_none())
+    {
+        return Ok(Json(GatewaySessionResponse {
+            session_id: session.id,
+            created: false,
+        }));
+    }
+
+    // None found — create a new gateway session
+    let working_dir = payload
+        .working_dir
+        .map(PathBuf::from)
+        .unwrap_or_else(|| PathBuf::from(std::env::var("HOME").unwrap_or_else(|_| ".".into())));
+
+    let config = Config::global();
+    let current_mode = config.get_goose_mode().unwrap_or_default();
+
+    let session = manager
+        .create_session(
+            working_dir,
+            payload.name.clone(),
+            goose::session::session_manager::SessionType::Gateway,
+            current_mode,
+        )
+        .await
+        .map_err(|e| ErrorResponse {
+            message: format!("Failed to create gateway session: {}", e),
+            status: StatusCode::INTERNAL_SERVER_ERROR,
+        })?;
+
+    // Populate provider, model, and extensions from global config
+    // (mirrors what complete_pairing does so the agent can reply immediately)
+    let mut update = manager.update(&session.id);
+
+    if let Ok(provider) = config.get_goose_provider() {
+        update = update.provider_name(provider);
+    }
+    if let Ok(model_name) = config.get_goose_model() {
+        if let Ok(model_config) = goose::model::ModelConfig::new(&model_name) {
+            update = update.model_config(model_config);
+        }
+    }
+
+    let extensions = goose::config::extensions::get_enabled_extensions();
+    let extensions_state = goose::session::EnabledExtensionsState::new(extensions);
+    let mut extension_data = session.extension_data.clone();
+    if let Err(e) = extensions_state.to_extension_data(&mut extension_data) {
+        warn!("Failed to initialize gateway session extensions: {}", e);
+    } else {
+        update = update.extension_data(extension_data);
+    }
+
+    let _ = update.apply().await;
+
+    Ok(Json(GatewaySessionResponse {
+        session_id: session.id,
+        created: true,
+    }))
+}
+
 pub fn routes(state: Arc<AppState>) -> Router {
     Router::new()
         .route("/agent/start", post(start_agent))
@@ -1338,5 +1432,6 @@ pub fn routes(state: Arc<AppState>) -> Router {
         .route("/agent/remove_extension", post(agent_remove_extension))
         .route("/agent/set_container", post(set_container))
         .route("/agent/stop", post(stop_agent))
+        .route("/agent/gateway", post(find_or_create_gateway_session))
         .with_state(state)
 }

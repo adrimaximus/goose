@@ -3,7 +3,7 @@ use crate::mcp_utils::extract_text_from_resource;
 use crate::model::ModelConfig;
 use crate::providers::base::Usage;
 use crate::providers::errors::ProviderError;
-use crate::providers::utils::{convert_image, ImageFormat};
+use crate::providers::utils::{convert_image, detect_image_path, load_image_file, ImageFormat};
 use anyhow::{anyhow, Result};
 use rmcp::model::{object, CallToolRequestParams, ErrorCode, ErrorData, JsonObject, Role, Tool};
 use rmcp::object as json_object;
@@ -122,6 +122,18 @@ pub fn format_messages(messages: &[Message]) -> Vec<Value> {
             match msg_content {
                 MessageContent::Text(text) => {
                     if !text.text.trim().is_empty() {
+                        if message.role == Role::User {
+                            if let Some(image_path) = detect_image_path(&text.text) {
+                                if let Ok(image) = load_image_file(&image_path) {
+                                    content.push(json!({
+                                        TYPE_FIELD: TEXT_TYPE,
+                                        TEXT_TYPE: text.text
+                                    }));
+                                    content.push(convert_image(&image, &ImageFormat::Anthropic));
+                                    continue;
+                                }
+                            }
+                        }
                         content.push(json!({
                             TYPE_FIELD: TEXT_TYPE,
                             TEXT_TYPE: text.text
@@ -446,8 +458,12 @@ pub fn get_usage(data: &Value) -> Result<Usage> {
             let total_tokens_i32 =
                 (total_input_i32 as i64 + output_tokens_i32 as i64).min(i32::MAX as i64) as i32;
 
-            tracing::debug!("🔍 Anthropic ACTUAL token counts from direct object: input={}, output={}, total={}", 
-                    total_input_i32, output_tokens_i32, total_tokens_i32);
+            tracing::debug!(
+                "🔍 Anthropic ACTUAL token counts from direct object: input={}, output={}, total={}",
+                total_input_i32,
+                output_tokens_i32,
+                total_tokens_i32
+            );
 
             Ok(Usage::new(
                 Some(total_input_i32),
@@ -512,6 +528,36 @@ pub fn create_request(
     messages: &[Message],
     tools: &[Tool],
 ) -> Result<Value> {
+    // When thinking is disabled, strip thinking/redacted_thinking blocks from history.
+    // Models that don't support extended thinking reject those content types with a 400
+    // error, which happens when the user switches models mid-conversation.
+    let stripped: Vec<Message>;
+    let messages = if thinking_type(model_config) == ThinkingType::Disabled {
+        stripped = messages
+            .iter()
+            .map(|msg| {
+                let content = msg
+                    .content
+                    .iter()
+                    .filter(|c| {
+                        !matches!(
+                            c,
+                            MessageContent::Thinking(_) | MessageContent::RedactedThinking(_)
+                        )
+                    })
+                    .cloned()
+                    .collect();
+                Message {
+                    content,
+                    ..msg.clone()
+                }
+            })
+            .collect();
+        stripped.as_slice()
+    } else {
+        messages
+    };
+
     let anthropic_messages = format_messages(messages);
     let tool_specs = format_tools(tools);
     let system_spec = format_system(system);
@@ -1078,6 +1124,49 @@ mod tests {
 
         assert!(payload.get("thinking").is_none());
         assert!(payload.get("output_config").is_none());
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_create_request_strips_thinking_blocks_when_thinking_disabled() -> Result<()> {
+        let _guard = env_lock::lock_env([
+            ("CLAUDE_THINKING_TYPE", None::<&str>),
+            ("CLAUDE_THINKING_ENABLED", None::<&str>),
+        ]);
+
+        // Simulate a history from a prior thinking-enabled turn
+        let messages = vec![
+            Message::user().with_text("Think about something"),
+            Message::assistant()
+                .with_content(MessageContent::thinking("internal thought", "sig_xyz"))
+                .with_content(MessageContent::redacted_thinking("opaque"))
+                .with_text("Here is my answer"),
+            Message::user().with_text("Follow up question"),
+        ];
+
+        let config = cfg("claude-sonnet-4-20250514");
+        let payload = create_request(&config, "system", &messages, &[])?;
+
+        let msgs = payload["messages"].as_array().unwrap();
+        // Find the assistant message
+        let assistant_msg = msgs.iter().find(|m| m["role"] == "assistant").unwrap();
+        let content = assistant_msg["content"].as_array().unwrap();
+
+        // Thinking and redacted_thinking blocks must be absent
+        for block in content {
+            let block_type = block["type"].as_str().unwrap_or("");
+            assert_ne!(
+                block_type, "thinking",
+                "thinking block leaked into non-thinking request"
+            );
+            assert_ne!(
+                block_type, "redacted_thinking",
+                "redacted_thinking block leaked into non-thinking request"
+            );
+        }
+        // The text content should still be present
+        assert!(content.iter().any(|b| b["type"] == "text"));
 
         Ok(())
     }

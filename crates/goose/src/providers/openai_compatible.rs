@@ -55,7 +55,7 @@ impl OpenAiCompatibleProvider {
             system,
             messages,
             tools,
-            &ImageFormat::OpenAi,
+            &ImageFormat::OpenAiCompat,
             for_streaming,
         )
         .map_err(|e| ProviderError::RequestFailed(format!("Failed to create request: {}", e)))
@@ -247,10 +247,24 @@ pub fn stream_openai_compat(
         let message_stream = response_to_streaming_message(framed);
         pin!(message_stream);
         while let Some(message) = message_stream.next().await {
-            let (message, usage) = message.map_err(|e|
-                e.downcast::<ProviderError>()
-                    .unwrap_or_else(|e| ProviderError::RequestFailed(format!("Stream decode error: {e}")))
-            )?;
+            let (message, usage) = match message {
+                Ok(v) => v,
+                Err(e) => {
+                    // Some providers (e.g. Zhipu/GLM) close the connection without
+                    // sending [DONE]. Treat connection-close errors as stream completion.
+                    let msg = e.to_string().to_lowercase();
+                    if msg.contains("error decoding response body")
+                        || msg.contains("connection closed")
+                        || msg.contains("unexpected eof")
+                        || msg.contains("connection reset")
+                    {
+                        break;
+                    }
+                    let err = e.downcast::<ProviderError>()
+                        .unwrap_or_else(|e| ProviderError::RequestFailed(format!("Stream decode error: {e}")));
+                    Err(err)?  // propagate via try_stream!
+                }
+            };
             log.write(&message, usage.as_ref().map(|f| f.usage).as_ref())?;
             yield (message, usage);
         }

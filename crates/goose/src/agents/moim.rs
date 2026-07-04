@@ -1,6 +1,7 @@
 use crate::agents::extension_manager::ExtensionManager;
 use crate::conversation::message::Message;
 use crate::conversation::{fix_conversation, Conversation};
+use regex::Regex;
 use rmcp::model::Role;
 use std::path::Path;
 
@@ -19,10 +20,43 @@ pub async fn inject_moim(
         return conversation;
     }
 
+    // Collect text from the latest user message to scan for image paths
+    let latest_user_text: Option<String> = {
+        let messages = conversation.messages();
+        messages
+            .iter()
+            .rev()
+            .find(|m| m.role == Role::User)
+            .map(|m| {
+                m.content
+                    .iter()
+                    .filter_map(|c| c.as_text())
+                    .collect::<Vec<_>>()
+                    .join(" ")
+            })
+    };
+
     if let Some(moim) = extension_manager
         .collect_moim(session_id, working_dir)
         .await
     {
+        // Check if we need to append image path instructions
+        let moim = if let Some(image_paths) =
+            latest_user_text.as_deref().and_then(extract_image_paths)
+        {
+            format!(
+                "{}\n\nThe current message contains image(s) at:\n{}\nTo analyze them, run: ~/.config/goose/analyze-image.sh \"<path>\" for each one.",
+                moim,
+                image_paths
+                    .iter()
+                    .map(|p| format!("  - {p}"))
+                    .collect::<Vec<_>>()
+                    .join("\n")
+            )
+        } else {
+            moim
+        };
+
         let mut messages = conversation.messages().clone();
         let idx = messages
             .iter()
@@ -46,6 +80,20 @@ pub async fn inject_moim(
         return fixed;
     }
     conversation
+}
+
+/// Extract image file paths from patterns like `[image: "/path/to/file.png"]` in text.
+fn extract_image_paths(text: &str) -> Option<Vec<String>> {
+    let re = Regex::new(r#"\[image:\s*"([^"]+)"\]"#).ok()?;
+    let paths: Vec<String> = re
+        .captures_iter(text)
+        .filter_map(|cap| cap.get(1).map(|m| m.as_str().to_string()))
+        .collect();
+    if paths.is_empty() {
+        None
+    } else {
+        Some(paths)
+    }
 }
 
 #[cfg(test)]

@@ -1,7 +1,9 @@
 use crate::model::ModelConfig;
 use crate::providers::base::Usage;
 use crate::providers::errors::ProviderError;
-use crate::providers::utils::{is_valid_function_name, sanitize_function_name};
+use crate::providers::utils::{
+    detect_image_path, is_valid_function_name, load_image_file, sanitize_function_name,
+};
 use anyhow::Result;
 use rmcp::model::{
     object, AnnotateAble, CallToolRequestParams, ErrorCode, ErrorData, RawContent, Role, Tool,
@@ -102,6 +104,20 @@ pub fn format_messages(messages: &[Message]) -> Vec<Value> {
                 match message_content {
                     MessageContent::Text(text) => {
                         if !text.text.is_empty() {
+                            if message.role == Role::User {
+                                if let Some(image_path) = detect_image_path(&text.text) {
+                                    if let Ok(image) = load_image_file(&image_path) {
+                                        parts.push(json!({"text": text.text}));
+                                        parts.push(json!({
+                                            "inline_data": {
+                                                "mime_type": image.mime_type,
+                                                "data": image.data,
+                                            }
+                                        }));
+                                        continue;
+                                    }
+                                }
+                            }
                             parts.push(json!({"text": text.text}));
                         }
                     }

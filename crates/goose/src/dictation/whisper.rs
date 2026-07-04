@@ -40,7 +40,8 @@ const SOT_TOKEN: u32 = 50258;
 const TRANSCRIBE_TOKEN: u32 = 50359;
 const EOT_TOKEN: u32 = 50257;
 const TIMESTAMP_BEGIN: u32 = 50364;
-const SAMPLE_BEGIN: usize = 3;
+// Prefix is [SOT, language, transcribe, no_timestamps] — 4 tokens
+const SAMPLE_BEGIN: usize = 4;
 
 #[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
 pub struct WhisperModel {
@@ -194,7 +195,6 @@ pub struct WhisperTranscriber {
     eot_token: u32,
     no_timestamps_token: u32,
     language_token: u32,
-    max_initial_timestamp_index: u32,
 }
 
 impl WhisperTranscriber {
@@ -265,7 +265,6 @@ impl WhisperTranscriber {
             eot_token: 50257,
             no_timestamps_token: 50363,
             language_token: 50259,
-            max_initial_timestamp_index: 50,
         })
     }
 
@@ -442,10 +441,23 @@ impl WhisperTranscriber {
                     suppress[token_id as usize] = f32::NEG_INFINITY;
                 }
             }
-            suppress[self.no_timestamps_token as usize] = f32::NEG_INFINITY;
+            // Suppress all timestamp tokens — we always use no-timestamps mode.
+            // Short utterances (e.g. single words) produced only [timestamp, EOT] in
+            // timestamp mode, yielding empty transcriptions.
+            suppress[TIMESTAMP_BEGIN as usize..].fill(f32::NEG_INFINITY);
             Tensor::from_vec(suppress, self.config.vocab_size, &self.device)?
         };
-        let mut tokens = vec![SOT_TOKEN, self.language_token, TRANSCRIBE_TOKEN];
+        // Prefix: [SOT, language, transcribe, <|notimestamps|>]
+        // The no_timestamps token tells the model to emit plain text rather than
+        // interleaved timestamps.  Without it the first generated token was forced
+        // to be a timestamp by apply_initial_timestamp_rule, causing short words
+        // ("submit", single commands) to produce [timestamp, EOT] → empty text.
+        let mut tokens = vec![
+            SOT_TOKEN,
+            self.language_token,
+            TRANSCRIBE_TOKEN,
+            self.no_timestamps_token,
+        ];
         let sample_len = self.config.max_target_positions / 2;
 
         for i in 0..sample_len {
@@ -477,7 +489,10 @@ impl WhisperTranscriber {
             tokens.push(next_token);
 
             if next_token == EOT_TOKEN {
-                tracing::debug!(tokens_generated = tokens.len() - 3, "EOT token received");
+                tracing::debug!(
+                    tokens_generated = tokens.len() - SAMPLE_BEGIN,
+                    "EOT token received"
+                );
                 break;
             }
             if tokens.len() > self.config.max_target_positions {
@@ -497,19 +512,19 @@ impl WhisperTranscriber {
         }
 
         tracing::debug!(
-            all_tokens = ?&tokens[3..],
+            all_tokens = ?&tokens[SAMPLE_BEGIN..],
             "all tokens generated in segment"
         );
 
-        let segment_text_tokens: Vec<u32> = tokens[3..]
+        let segment_text_tokens: Vec<u32> = tokens[SAMPLE_BEGIN..]
             .iter()
             .filter(|&&t| t != EOT_TOKEN && t < TIMESTAMP_BEGIN)
             .copied()
             .collect();
 
-        if segment_text_tokens.is_empty() && tokens.len() > 3 {
+        if segment_text_tokens.is_empty() && tokens.len() > SAMPLE_BEGIN {
             tracing::debug!(
-                raw_tokens = ?&tokens[3..],
+                raw_tokens = ?&tokens[SAMPLE_BEGIN..],
                 "no text tokens found after filtering (all were EOT or timestamps)"
             );
         }
@@ -536,14 +551,12 @@ impl WhisperTranscriber {
             &mut masks,
             &mut mask_buffer,
             &device,
-        )?;
-        self.apply_initial_timestamp_rule(
-            tokens.len(),
-            vocab_size,
-            &mut masks,
-            &mut mask_buffer,
-            &device,
-        )?;
+        )?
+        // apply_initial_timestamp_rule is intentionally omitted: we always operate
+        // in no-timestamps mode (no_timestamps_token is part of the prefix), so
+        // forcing the first token to be a timestamp is incorrect and caused
+        // single-word utterances to transcribe as empty strings.
+        ;
 
         let mut logits = input_logits.clone();
         for mask in masks {
@@ -612,42 +625,6 @@ impl WhisperTranscriber {
 
             for i in 0..vocab_size {
                 mask_buffer[i as usize] = if i >= TIMESTAMP_BEGIN && i < timestamp_last {
-                    f32::NEG_INFINITY
-                } else {
-                    0.0
-                };
-            }
-            masks.push(Tensor::new(mask_buffer as &[f32], device)?);
-        }
-
-        Ok(())
-    }
-
-    fn apply_initial_timestamp_rule(
-        &self,
-        tokens_len: usize,
-        vocab_size: u32,
-        masks: &mut Vec<Tensor>,
-        mask_buffer: &mut [f32],
-        device: &Device,
-    ) -> Result<()> {
-        if tokens_len != SAMPLE_BEGIN {
-            return Ok(());
-        }
-
-        for i in 0..vocab_size {
-            mask_buffer[i as usize] = if i < TIMESTAMP_BEGIN {
-                f32::NEG_INFINITY
-            } else {
-                0.0
-            };
-        }
-        masks.push(Tensor::new(mask_buffer as &[f32], device)?);
-
-        let last_allowed = TIMESTAMP_BEGIN + self.max_initial_timestamp_index;
-        if last_allowed < vocab_size {
-            for i in 0..vocab_size {
-                mask_buffer[i as usize] = if i > last_allowed {
                     f32::NEG_INFINITY
                 } else {
                     0.0

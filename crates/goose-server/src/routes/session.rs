@@ -84,7 +84,7 @@ async fn list_sessions(
 ) -> Result<Json<SessionListResponse>, StatusCode> {
     let sessions = state
         .session_manager()
-        .list_sessions()
+        .list_all_sessions()
         .await
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
 

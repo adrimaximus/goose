@@ -135,7 +135,7 @@ pub fn format_messages(messages: &[Message], image_format: &ImageFormat) -> Vec<
                     if !text.text.is_empty() {
                         if message.role == Role::User {
                             if let Some(image_path) = detect_image_path(&text.text) {
-                                if let Ok(image) = load_image_file(image_path) {
+                                if let Ok(image) = load_image_file(&image_path) {
                                     has_non_text_content = true;
                                     content_array.push(json!({"type": "text", "text": text.text}));
                                     content_array.push(convert_image(&image, image_format));
@@ -151,9 +151,16 @@ pub fn format_messages(messages: &[Message], image_format: &ImageFormat) -> Vec<
                     }
                 }
                 MessageContent::Thinking(t) => {
-                    reasoning_text.push_str(&t.thinking);
+                    // Only include thinking that originated from an OpenAI-compatible
+                    // model (empty signature). Thinking blocks from Anthropic/Claude
+                    // carry a non-empty signature and must not be sent to OpenAI-
+                    // compatible APIs, which reject them.
+                    if t.signature.is_empty() {
+                        reasoning_text.push_str(&t.thinking);
+                    }
                 }
                 MessageContent::RedactedThinking(_) => {
+                    // Always from Anthropic — skip.
                     continue;
                 }
                 MessageContent::SystemNotification(_) => {
@@ -2186,6 +2193,56 @@ data: [DONE]"#;
         assert_eq!(spec[0]["tool_calls"][0]["function"]["name"], "test_tool");
 
         Ok(())
+    }
+
+    #[test]
+    fn test_format_messages_strips_claude_thinking_with_signature() {
+        // Simulate a conversation that started on Claude (thinking has signature)
+        // then switched to an OpenAI-compatible model like GLM-5.1.
+        // Claude thinking blocks must NOT become reasoning_content.
+        let messages = vec![
+            Message::user().with_text("Think about something"),
+            Message::assistant()
+                .with_content(MessageContent::thinking(
+                    "Claude's internal reasoning",
+                    "sig_abc123",
+                ))
+                .with_content(MessageContent::redacted_thinking("opaque_data"))
+                .with_text("Here is my answer"),
+            Message::user().with_text("Follow up"),
+        ];
+
+        let spec = format_messages(&messages, &ImageFormat::OpenAi);
+
+        // Find the assistant message
+        let assistant = spec.iter().find(|m| m["role"] == "assistant").unwrap();
+
+        // reasoning_content must be absent (Claude's thinking should be stripped)
+        assert!(
+            assistant.get("reasoning_content").is_none(),
+            "Claude thinking with signature must not leak as reasoning_content"
+        );
+        // The text content should still be there
+        assert!(assistant.get("content").is_some());
+    }
+
+    #[test]
+    fn test_format_messages_keeps_openai_thinking_without_signature() {
+        // Thinking produced by an OpenAI-compatible model (empty signature) must
+        // still be forwarded as reasoning_content so models like Kimi/DeepSeek
+        // that need it back continue to work.
+        let messages = vec![
+            Message::user().with_text("Solve this"),
+            Message::assistant()
+                .with_content(MessageContent::thinking("OpenAI-model reasoning", ""))
+                .with_text("The answer is 42"),
+            Message::user().with_text("Thanks"),
+        ];
+
+        let spec = format_messages(&messages, &ImageFormat::OpenAi);
+
+        let assistant = spec.iter().find(|m| m["role"] == "assistant").unwrap();
+        assert_eq!(assistant["reasoning_content"], "OpenAI-model reasoning");
     }
 
     #[test_case(

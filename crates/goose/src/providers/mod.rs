@@ -52,6 +52,7 @@ pub mod usage_estimator;
 pub mod utils;
 pub mod venice;
 pub mod xai;
+pub mod zhipuai;
 
 pub use init::{
     cleanup_provider, create, create_with_default_model, create_with_named_model,

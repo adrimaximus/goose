@@ -150,9 +150,10 @@ impl VeniceProvider {
                         if let Some(errors) = tools.get("_errors") {
                             if errors.to_string().contains("not supported by this model") {
                                 let model_name = self.model.model_name.clone();
-                                return Err(ProviderError::RequestFailed(
-                                    format!("The selected model '{}' does not support tool calls. Please select a model that supports tools, such as 'llama-3.3-70b' or 'mistral-31-24b'.", model_name)
-                                ));
+                                return Err(ProviderError::RequestFailed(format!(
+                                    "The selected model '{}' does not support tool calls. Please select a model that supports tools, such as 'llama-3.3-70b' or 'mistral-31-24b'.",
+                                    model_name
+                                )));
                             }
                         }
                     }
@@ -167,9 +168,10 @@ impl VeniceProvider {
                                 {
                                     if message.contains("tools is not supported by this model") {
                                         let model_name = self.model.model_name.clone();
-                                        return Err(ProviderError::RequestFailed(
-                                            format!("The selected model '{}' does not support tool calls. Please select a model that supports tools, such as 'llama-3.3-70b' or 'mistral-31-24b'.", model_name)
-                                        ));
+                                        return Err(ProviderError::RequestFailed(format!(
+                                            "The selected model '{}' does not support tool calls. Please select a model that supports tools, such as 'llama-3.3-70b' or 'mistral-31-24b'.",
+                                            model_name
+                                        )));
                                     }
                                 }
                             }

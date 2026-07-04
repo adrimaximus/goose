@@ -679,6 +679,7 @@ pub struct Message {
     pub created: i64,
     #[serde(deserialize_with = "deserialize_sanitized_content")]
     pub content: Vec<MessageContent>,
+    #[serde(default)]
     pub metadata: MessageMetadata,
 }
 

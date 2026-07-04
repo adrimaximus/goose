@@ -1,5 +1,25 @@
+# Previous Windows targets preserved
 [target.x86_64-pc-windows-msvc]
 rustflags = ["-C", "link-args=/FORCE:MULTIPLE /STACK:8388608"]
 
 [target.aarch64-pc-windows-msvc]
 rustflags = ["-C", "link-args=/FORCE:MULTIPLE /STACK:8388608"]
+
+# === CLARA'S OPTIMIZATIONS ===
+
+[build]
+# 8GB RAM = 4 parallel jobs max safe (default would use 8 = OOM/swap)
+jobs = 4
+# sccache for instant rebuilds
+rustc-wrapper = "sccache"
+
+[profile.release]
+# Faster incremental release builds
+incremental = true
+
+[profile.dev]
+incremental = true
+
+[profile.release.package."*"]
+# Optimize deps faster, our code still gets opt-level 3
+opt-level = 1

@@ -37,6 +37,7 @@ use super::{
     tetrate::TetrateProvider,
     venice::VeniceProvider,
     xai::XaiProvider,
+    zhipuai::ZhipuAiProvider,
 };
 use crate::config::ExtensionConfig;
 use crate::model::ModelConfig;
@@ -86,6 +87,7 @@ async fn init_registry() -> RwLock<ProviderRegistry> {
         registry.register::<TetrateProvider>(true);
         registry.register::<VeniceProvider>(false);
         registry.register::<XaiProvider>(false);
+        registry.register::<ZhipuAiProvider>(true);
     });
     // Register cleanup functions for providers with cached state
     registry.set_cleanup(

@@ -2,7 +2,7 @@ use crate::conversation::message::{Message, MessageContent};
 use crate::mcp_utils::extract_text_from_resource;
 use crate::model::ModelConfig;
 use crate::providers::base::{ProviderUsage, Usage};
-use crate::providers::utils::extract_reasoning_effort;
+use crate::providers::utils::{detect_image_path, extract_reasoning_effort, load_image_file};
 use anyhow::{anyhow, Error};
 use async_stream::try_stream;
 use chrono;
@@ -317,6 +317,46 @@ fn add_message_items(input_items: &mut Vec<Value>, messages: &[Message]) {
                     } else {
                         "input_text"
                     };
+
+                    if message.role == Role::User {
+                        if let Some(image_path) = detect_image_path(&text.text) {
+                            if let Ok(image) = load_image_file(&image_path) {
+                                text_items.push(json!({
+                                    "type": content_type,
+                                    "text": text.text
+                                }));
+                                if !text_items.is_empty() {
+                                    input_items.push(json!({
+                                        "role": role,
+                                        "content": text_items
+                                    }));
+                                    text_items = Vec::new();
+                                }
+                                input_items.push(if image.mime_type == "application/pdf" {
+                                    json!({
+                                        "type": "file",
+                                        "file": {
+                                            "filename": "document.pdf",
+                                            "file_data": format!(
+                                                "data:{};base64,{}",
+                                                image.mime_type, image.data
+                                            )
+                                        }
+                                    })
+                                } else {
+                                    json!({
+                                        "type": "input_image",
+                                        "image_url": format!(
+                                            "data:{};base64,{}",
+                                            image.mime_type, image.data
+                                        )
+                                    })
+                                });
+                                continue;
+                            }
+                        }
+                    }
+
                     text_items.push(json!({
                         "type": content_type,
                         "text": text.text
@@ -381,13 +421,28 @@ fn add_message_items(input_items: &mut Vec<Value>, messages: &[Message]) {
                                             "type": "input_text",
                                             "text": extract_text_from_resource(&r.resource)
                                         }),
-                                        RawContent::Image(image) => json!({
-                                            "type": "input_image",
-                                            "image_url": format!(
-                                                "data:{};base64,{}",
-                                                image.mime_type, image.data
-                                            )
-                                        }),
+                                        RawContent::Image(image) => {
+                                            if image.mime_type == "application/pdf" {
+                                                json!({
+                                                    "type": "file",
+                                                    "file": {
+                                                        "filename": "document.pdf",
+                                                        "file_data": format!(
+                                                            "data:{};base64,{}",
+                                                            image.mime_type, image.data
+                                                        )
+                                                    }
+                                                })
+                                            } else {
+                                                json!({
+                                                    "type": "input_image",
+                                                    "image_url": format!(
+                                                        "data:{};base64,{}",
+                                                        image.mime_type, image.data
+                                                    )
+                                                })
+                                            }
+                                        }
                                         RawContent::Audio(_) => json!({
                                             "type": "input_text", "text": "[Audio content]"
                                         }),

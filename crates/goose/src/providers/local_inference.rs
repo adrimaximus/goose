@@ -242,7 +242,9 @@ fn strip_image_parts_from_messages(messages: &mut [Value]) {
         }
     }
     if stripped {
-        tracing::warn!("Stripped image content parts from messages — vision encoder not available for this model");
+        tracing::warn!(
+            "Stripped image content parts from messages — vision encoder not available for this model"
+        );
     }
 }
 

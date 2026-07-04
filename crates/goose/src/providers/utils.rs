@@ -20,27 +20,78 @@ use uuid::Uuid;
 
 #[derive(Debug, Copy, Clone, Serialize, Deserialize)]
 pub enum ImageFormat {
+    /// Real OpenAI API — supports the `{"type": "file"}` format for PDFs.
     OpenAi,
+    /// OpenAI-compatible providers (e.g. Qwen, Mistral, Groq) that only accept
+    /// `image_url` for vision and do not understand the `file` content block.
+    /// PDFs are replaced with a text placeholder so the request does not 400.
+    OpenAiCompat,
     Anthropic,
 }
 
 /// Convert an image content into an image json based on format
 pub fn convert_image(image: &ImageContent, image_format: &ImageFormat) -> Value {
+    let is_pdf = image.mime_type == "application/pdf";
     match image_format {
-        ImageFormat::OpenAi => json!({
-            "type": "image_url",
-            "image_url": {
-                "url": format!("data:{};base64,{}", image.mime_type, image.data)
+        ImageFormat::OpenAi => {
+            if is_pdf {
+                json!({
+                    "type": "file",
+                    "file": {
+                        "filename": "document.pdf",
+                        "file_data": format!("data:{};base64,{}", image.mime_type, image.data)
+                    }
+                })
+            } else {
+                json!({
+                    "type": "image_url",
+                    "image_url": {
+                        "url": format!("data:{};base64,{}", image.mime_type, image.data)
+                    }
+                })
             }
-        }),
-        ImageFormat::Anthropic => json!({
-            "type": "image",
-            "source": {
-                "type": "base64",
-                "media_type": image.mime_type,
-                "data": image.data,
+        }
+        ImageFormat::OpenAiCompat => {
+            if is_pdf {
+                // Most OpenAI-compatible providers do not support the `file` content
+                // block that real OpenAI added for PDFs.  Sending it causes a 400.
+                // Fall back to a text note so the request succeeds; the user can
+                // share the file path and the agent can read it via file tools.
+                json!({
+                    "type": "text",
+                    "text": "[A PDF was attached but this provider does not support binary PDF uploads. \
+                              Share the file path in your message so the agent can read it with file tools.]"
+                })
+            } else {
+                json!({
+                    "type": "image_url",
+                    "image_url": {
+                        "url": format!("data:{};base64,{}", image.mime_type, image.data)
+                    }
+                })
             }
-        }),
+        }
+        ImageFormat::Anthropic => {
+            if is_pdf {
+                json!({
+                    "type": "document",
+                    "source": {
+                        "type": "base64",
+                        "media_type": image.mime_type,
+                        "data": image.data,
+                    }
+                })
+            } else {
+                json!({
+                    "type": "image",
+                    "source": {
+                        "type": "base64",
+                        "media_type": image.mime_type,
+                        "data": image.data,
+                    }
+                })
+            }
+        }
     }
 }
 
@@ -153,26 +204,47 @@ pub async fn handle_response_google_compat(response: Response) -> Result<Value, 
     let final_status = get_google_final_status(status, payload.as_ref());
 
     match final_status {
-        StatusCode::OK =>  payload.ok_or_else( || ProviderError::RequestFailed("Response body is not valid JSON".to_string()) ),
+        StatusCode::OK => payload.ok_or_else(|| {
+            ProviderError::RequestFailed("Response body is not valid JSON".to_string())
+        }),
         StatusCode::UNAUTHORIZED | StatusCode::FORBIDDEN => {
-            Err(ProviderError::Authentication(format!("Authentication failed. Please ensure your API keys are valid and have the required permissions. \
-                Status: {}. Response: {:?}", final_status, payload )))
+            Err(ProviderError::Authentication(format!(
+                "Authentication failed. Please ensure your API keys are valid and have the required permissions. \
+                Status: {}. Response: {:?}",
+                final_status, payload
+            )))
         }
         StatusCode::BAD_REQUEST | StatusCode::NOT_FOUND => {
             let mut error_msg = "Unknown error".to_string();
             if let Some(payload) = &payload {
                 if let Some(error) = payload.get("error") {
-                    error_msg = error.get("message").and_then(|m| m.as_str()).unwrap_or("Unknown error").to_string();
-                    let error_status = error.get("status").and_then(|s| s.as_str()).unwrap_or("Unknown status");
-                    if error_status == "INVALID_ARGUMENT" && error_msg.to_lowercase().contains("exceeds") {
+                    error_msg = error
+                        .get("message")
+                        .and_then(|m| m.as_str())
+                        .unwrap_or("Unknown error")
+                        .to_string();
+                    let error_status = error
+                        .get("status")
+                        .and_then(|s| s.as_str())
+                        .unwrap_or("Unknown status");
+                    if error_status == "INVALID_ARGUMENT"
+                        && error_msg.to_lowercase().contains("exceeds")
+                    {
                         return Err(ProviderError::ContextLengthExceeded(error_msg.to_string()));
                     }
                 }
             }
             tracing::debug!(
-                "{}", format!("Provider request failed with status: {}. Payload: {:?}", final_status, payload)
+                "{}",
+                format!(
+                    "Provider request failed with status: {}. Payload: {:?}",
+                    final_status, payload
+                )
             );
-            Err(ProviderError::RequestFailed(format!("Request failed with status: {}. Message: {}", final_status, error_msg)))
+            Err(ProviderError::RequestFailed(format!(
+                "Request failed with status: {}. Message: {}",
+                final_status, error_msg
+            )))
         }
         StatusCode::TOO_MANY_REQUESTS => {
             let retry_delay = payload.as_ref().and_then(parse_google_retry_delay);
@@ -186,9 +258,16 @@ pub async fn handle_response_google_compat(response: Response) -> Result<Value, 
         )),
         _ => {
             tracing::debug!(
-                "{}", format!("Provider request failed with status: {}. Payload: {:?}", final_status, payload)
+                "{}",
+                format!(
+                    "Provider request failed with status: {}. Payload: {:?}",
+                    final_status, payload
+                )
             );
-            Err(ProviderError::RequestFailed(format!("Request failed with status: {}", final_status)))
+            Err(ProviderError::RequestFailed(format!(
+                "Request failed with status: {}",
+                final_status
+            )))
         }
     }
 }
@@ -240,84 +319,112 @@ pub fn get_model(data: &Value) -> String {
     }
 }
 
-/// Check if a file is actually an image by examining its magic bytes
-fn is_image_file(path: &Path) -> bool {
+fn is_media_file(path: &Path) -> bool {
     if let Ok(mut file) = std::fs::File::open(path) {
-        let mut buffer = [0u8; 8]; // Large enough for most image magic numbers
+        let mut buffer = [0u8; 12];
         if file.read(&mut buffer).is_ok() {
-            // Check magic numbers for common image formats
             return match &buffer[0..4] {
-                // PNG: 89 50 4E 47
                 [0x89, 0x50, 0x4E, 0x47] => true,
-                // JPEG: FF D8 FF
                 [0xFF, 0xD8, 0xFF, _] => true,
-                // GIF: 47 49 46 38
                 [0x47, 0x49, 0x46, 0x38] => true,
-                _ => false,
+                [0x42, 0x4D, _, _] => true,
+                [0x52, 0x49, 0x46, 0x46] => buffer.len() >= 12 && &buffer[8..12] == b"WEBP",
+                [0x49, 0x49, 0x2A, 0x00] => true,
+                [0x4D, 0x4D, 0x00, 0x2A] => true,
+                [0x25, 0x50, 0x44, 0x46] => true,
+                _ => {
+                    buffer.len() >= 12
+                        && &buffer[4..8] == b"ftyp"
+                        && matches!(
+                            &buffer[8..12],
+                            b"heic" | b"heix" | b"heim" | b"heis" | b"mif1"
+                        )
+                }
             };
         }
     }
     false
 }
 
-/// Detect if a string contains a path to an image file
-pub fn detect_image_path(text: &str) -> Option<&str> {
-    // Basic image file extension check
-    let extensions = [".png", ".jpg", ".jpeg"];
+#[allow(clippy::string_slice)] // Slicing on ASCII '"' boundaries from str::find; always valid UTF-8
+pub fn detect_image_path(text: &str) -> Option<String> {
+    let extensions = [
+        ".png", ".jpg", ".jpeg", ".gif", ".webp", ".bmp", ".tiff", ".tif", ".heic", ".heif",
+        ".svg", ".pdf",
+    ];
 
-    // Find any word that ends with an image extension
+    // First, try to find quoted paths e.g. [image: "/path/with spaces/file.png"]
+    let mut search = text;
+    while let Some(quote_start) = search.find('"') {
+        let after_quote = &search[quote_start + 1..];
+        if let Some(quote_end) = after_quote.find('"') {
+            let candidate = &after_quote[..quote_end];
+            if extensions
+                .iter()
+                .any(|ext| candidate.to_lowercase().ends_with(ext))
+            {
+                let path = Path::new(candidate);
+                if path.is_absolute() && path.is_file() && is_media_file(path) {
+                    return Some(candidate.to_string());
+                }
+            }
+            search = &after_quote[quote_end + 1..];
+        } else {
+            break;
+        }
+    }
+
+    // Fall back: find any whitespace-delimited word ending with an image extension
     for word in text.split_whitespace() {
         if extensions
             .iter()
             .any(|ext| word.to_lowercase().ends_with(ext))
         {
             let path = Path::new(word);
-            // Check if it's an absolute path and file exists
-            if path.is_absolute() && path.is_file() {
-                // Verify it's actually an image file
-                if is_image_file(path) {
-                    return Some(word);
-                }
+            if path.is_absolute() && path.is_file() && is_media_file(path) {
+                return Some(word.to_string());
             }
         }
     }
     None
 }
 
-/// Convert a local image file to base64 encoded ImageContent
 pub fn load_image_file(path: &str) -> Result<ImageContent, ProviderError> {
     let path = Path::new(path);
 
-    // Verify it's an image before proceeding
-    if !is_image_file(path) {
+    if !is_media_file(path) {
         return Err(ProviderError::RequestFailed(
-            "File is not a valid image".to_string(),
+            "File is not a valid image or document".to_string(),
         ));
     }
 
-    // Read the file
     let bytes = std::fs::read(path)
         .map_err(|e| ProviderError::RequestFailed(format!("Failed to read image file: {}", e)))?;
 
-    // Detect mime type from extension
     let mime_type = match path.extension().and_then(|e| e.to_str()) {
         Some(ext) => match ext.to_lowercase().as_str() {
             "png" => "image/png",
             "jpg" | "jpeg" => "image/jpeg",
+            "gif" => "image/gif",
+            "webp" => "image/webp",
+            "bmp" => "image/bmp",
+            "tiff" | "tif" => "image/tiff",
+            "heic" | "heif" => "image/heic",
+            "svg" => "image/svg+xml",
+            "pdf" => "application/pdf",
             _ => {
                 return Err(ProviderError::RequestFailed(
                     "Unsupported image format".to_string(),
-                ))
+                ));
             }
         },
         None => {
             return Err(ProviderError::RequestFailed(
                 "Unknown image format".to_string(),
-            ))
+            ));
         }
     };
 
-    // Convert to base64
     let data = base64::prelude::BASE64_STANDARD.encode(&bytes);
 
     Ok(RawImageContent {
@@ -566,7 +673,7 @@ mod tests {
 
         // Test with valid PNG file using absolute path
         let text = format!("Here is an image {}", png_path_str);
-        assert_eq!(detect_image_path(&text), Some(png_path_str));
+        assert_eq!(detect_image_path(&text).as_deref(), Some(png_path_str));
 
         // Test with non-image file that has .png extension
         let text = format!("Here is a fake image {}", fake_png_path.to_str().unwrap());
@@ -583,6 +690,25 @@ mod tests {
         // Test with relative path (should not match)
         let text = "Here is a relative/path/image.png";
         assert_eq!(detect_image_path(text), None);
+
+        let webp_path = temp_dir.path().join("test.webp");
+        let mut webp_data = vec![0x52, 0x49, 0x46, 0x46];
+        webp_data.extend_from_slice(&[0x0A, 0x00, 0x00, 0x00]);
+        webp_data.extend_from_slice(b"WEBP");
+        std::fs::write(&webp_path, &webp_data).unwrap();
+        let webp_path_str = webp_path.to_str().unwrap();
+
+        let text = format!("Here is a webp image {}", webp_path_str);
+        assert_eq!(detect_image_path(&text).as_deref(), Some(webp_path_str));
+
+        let pdf_path = temp_dir.path().join("test.pdf");
+        let mut pdf_data = vec![0x25, 0x50, 0x44, 0x46];
+        pdf_data.extend_from_slice(b"-1.4 test content");
+        std::fs::write(&pdf_path, &pdf_data).unwrap();
+        let pdf_path_str = pdf_path.to_str().unwrap();
+
+        let text = format!("Check this PDF {}", pdf_path_str);
+        assert_eq!(detect_image_path(&text).as_deref(), Some(pdf_path_str));
     }
 
     #[test]
@@ -628,13 +754,42 @@ mod tests {
         std::fs::write(&gif_path, gif_data).unwrap();
         let gif_path_str = gif_path.to_str().unwrap();
 
-        // Test loading unsupported GIF format
         let result = load_image_file(gif_path_str);
+        assert!(result.is_ok());
+        let image = result.unwrap();
+        assert_eq!(image.mime_type, "image/gif");
+
+        let webp_path = temp_dir.path().join("test.webp");
+        let mut webp_data = vec![0x52, 0x49, 0x46, 0x46];
+        webp_data.extend_from_slice(&[0x0A, 0x00, 0x00, 0x00]);
+        webp_data.extend_from_slice(b"WEBP");
+        std::fs::write(&webp_path, webp_data).unwrap();
+        let webp_path_str = webp_path.to_str().unwrap();
+
+        let result = load_image_file(webp_path_str);
+        assert!(result.is_ok());
+        let image = result.unwrap();
+        assert_eq!(image.mime_type, "image/webp");
+
+        let xyz_path = temp_dir.path().join("test.xyz");
+        std::fs::write(&xyz_path, png_data).unwrap();
+        let result = load_image_file(xyz_path.to_str().unwrap());
         assert!(result.is_err());
         assert!(result
             .unwrap_err()
             .to_string()
             .contains("Unsupported image format"));
+
+        let pdf_path = temp_dir.path().join("test.pdf");
+        let mut pdf_data = vec![0x25, 0x50, 0x44, 0x46];
+        pdf_data.extend_from_slice(b"-1.4 test pdf content");
+        std::fs::write(&pdf_path, &pdf_data).unwrap();
+        let pdf_path_str = pdf_path.to_str().unwrap();
+
+        let result = load_image_file(pdf_path_str);
+        assert!(result.is_ok());
+        let doc = result.unwrap();
+        assert_eq!(doc.mime_type, "application/pdf");
     }
 
     #[test]
