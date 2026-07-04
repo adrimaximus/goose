@@ -1,3 +1,4 @@
+use std::path::PathBuf;
 use std::sync::{Arc, RwLock};
 
 #[cfg(feature = "aws-providers")]
@@ -8,7 +9,6 @@ use super::local_inference::LocalInferenceProvider;
 use super::sagemaker_tgi::SageMakerTgiProvider;
 use super::{
     amp_acp::AmpAcpProvider,
-    anthropic::AnthropicProvider,
     avian::AvianProvider,
     azure::AzureProvider,
     base::{Provider, ProviderMetadata},
@@ -19,29 +19,34 @@ use super::{
     codex_acp::CodexAcpProvider,
     copilot_acp::CopilotAcpProvider,
     cursor_agent::CursorAgentProvider,
-    databricks::DatabricksProvider,
     gcpvertexai::GcpVertexAIProvider,
     gemini_cli::GeminiCliProvider,
     gemini_oauth::GeminiOAuthProvider,
     githubcopilot::GithubCopilotProvider,
     google::GoogleProvider,
+    huggingface::HuggingFaceProvider,
     kimicode::KimiCodeProvider,
     litellm::LiteLLMProvider,
     nanogpt::NanoGptProvider,
-    ollama::OllamaProvider,
-    openai::OpenAiProvider,
     openrouter::OpenRouterProvider,
     pi_acp::PiAcpProvider,
     provider_registry::ProviderRegistry,
     snowflake::SnowflakeProvider,
     tetrate::TetrateProvider,
-    venice::VeniceProvider,
     xai::XaiProvider,
+<<<<<<< HEAD
     zhipuai::ZhipuAiProvider,
+=======
+    xai_oauth::XaiOAuthProvider,
+>>>>>>> a0aed81f36076cfe48def4b21c04d7f0d33072e8
 };
 use crate::config::ExtensionConfig;
-use crate::model::ModelConfig;
+use crate::providers::anthropic_def::AnthropicProviderDef;
 use crate::providers::base::ProviderType;
+use crate::providers::databricks_def::{self, DatabricksProviderDef};
+use crate::providers::databricks_v2_def::{self, DatabricksV2ProviderDef};
+use crate::providers::ollama_def::OllamaProviderDef;
+use crate::providers::openai_def::OpenAiProviderDef;
 use crate::{
     config::declarative_providers::register_declarative_providers,
     providers::provider_registry::ProviderEntry,
@@ -52,42 +57,94 @@ use tokio::sync::OnceCell;
 static REGISTRY: OnceCell<RwLock<ProviderRegistry>> = OnceCell::const_new();
 
 async fn init_registry() -> RwLock<ProviderRegistry> {
-    let mut registry = ProviderRegistry::new().with_providers(|registry| {
-        registry.register::<AmpAcpProvider>(false);
-        registry.register::<AnthropicProvider>(true);
+    let tls_config =
+        crate::config::tls::provider_tls_config_from_config(crate::config::Config::global())
+            .expect("failed to load provider TLS config");
+    let mut registry = ProviderRegistry::new(tls_config).with_providers(|registry| {
+        use super::inventory::registrations;
+
+        registry.register_with_inventory::<AmpAcpProvider>(
+            false,
+            Some(registrations::amp_acp_inventory()),
+        );
+        registry.register_with_inventory::<AnthropicProviderDef>(
+            true,
+            Some(registrations::anthropic_inventory()),
+        );
         registry.register::<AvianProvider>(false);
         registry.register::<AzureProvider>(false);
         #[cfg(feature = "aws-providers")]
         registry.register::<BedrockProvider>(false);
         #[cfg(feature = "local-inference")]
         registry.register::<LocalInferenceProvider>(false);
-        registry.register::<ChatGptCodexProvider>(true);
-        registry.register::<ClaudeAcpProvider>(false);
+        registry.register_with_inventory::<ChatGptCodexProvider>(
+            true,
+            Some(registrations::chatgpt_codex_inventory()),
+        );
+        registry.register_with_inventory::<ClaudeAcpProvider>(
+            false,
+            Some(registrations::claude_acp_inventory()),
+        );
         registry.register::<ClaudeCodeProvider>(true);
-        registry.register::<CodexAcpProvider>(false);
-        registry.register::<CopilotAcpProvider>(false);
+        registry.register_with_inventory::<CodexAcpProvider>(
+            false,
+            Some(registrations::codex_acp_inventory()),
+        );
+        registry.register_with_inventory::<CopilotAcpProvider>(
+            false,
+            Some(registrations::copilot_acp_inventory()),
+        );
         registry.register::<CodexProvider>(true);
         registry.register::<CursorAgentProvider>(false);
-        registry.register::<DatabricksProvider>(true);
+        registry.register_with_inventory::<DatabricksProviderDef>(
+            true,
+            Some(registrations::refresh_only()),
+        );
+        registry.register_with_inventory::<DatabricksV2ProviderDef>(
+            false,
+            Some(registrations::refresh_only()),
+        );
         registry.register::<GcpVertexAIProvider>(false);
         registry.register::<GeminiCliProvider>(false);
         registry.register::<GeminiOAuthProvider>(true);
         registry.register::<GithubCopilotProvider>(false);
-        registry.register::<GoogleProvider>(true);
+        registry.register_with_inventory::<GoogleProvider>(
+            true,
+            Some(registrations::google_inventory()),
+        );
+        registry.register_with_inventory::<HuggingFaceProvider>(
+            true,
+            Some(registrations::huggingface_inventory()),
+        );
         registry.register::<KimiCodeProvider>(true);
         registry.register::<LiteLLMProvider>(false);
         registry.register::<NanoGptProvider>(true);
-        registry.register::<OllamaProvider>(true);
-        registry.register::<OpenAiProvider>(true);
+        registry.register_with_inventory::<OllamaProviderDef>(
+            true,
+            Some(registrations::ollama_inventory()),
+        );
+        registry.register_with_inventory::<OpenAiProviderDef>(
+            true,
+            Some(registrations::openai_inventory()),
+        );
         registry.register::<OpenRouterProvider>(true);
-        registry.register::<PiAcpProvider>(false);
+        registry.register_with_inventory::<PiAcpProvider>(
+            false,
+            Some(registrations::pi_acp_inventory()),
+        );
         #[cfg(feature = "aws-providers")]
         registry.register::<SageMakerTgiProvider>(false);
         registry.register::<SnowflakeProvider>(false);
         registry.register::<TetrateProvider>(true);
-        registry.register::<VeniceProvider>(false);
         registry.register::<XaiProvider>(false);
+<<<<<<< HEAD
         registry.register::<ZhipuAiProvider>(true);
+=======
+        registry.register_with_inventory::<XaiOAuthProvider>(
+            true,
+            Some(registrations::xai_oauth_inventory()),
+        );
+>>>>>>> a0aed81f36076cfe48def4b21c04d7f0d33072e8
     });
     // Register cleanup functions for providers with cached state
     registry.set_cleanup(
@@ -96,11 +153,31 @@ async fn init_registry() -> RwLock<ProviderRegistry> {
     );
     registry.set_cleanup(
         "databricks",
-        Arc::new(|| Box::pin(DatabricksProvider::cleanup())),
+        Arc::new(|| Box::pin(databricks_def::cleanup())),
+    );
+    registry.set_cleanup(
+        "databricks_v2",
+        Arc::new(|| Box::pin(databricks_v2_def::cleanup())),
     );
     registry.set_cleanup(
         "kimi_code",
         Arc::new(|| Box::pin(KimiCodeProvider::cleanup())),
+    );
+    registry.set_cleanup(
+        "chatgpt_codex",
+        Arc::new(|| Box::pin(ChatGptCodexProvider::cleanup())),
+    );
+    registry.set_cleanup(
+        "gemini_oauth",
+        Arc::new(|| Box::pin(GeminiOAuthProvider::cleanup())),
+    );
+    registry.set_cleanup(
+        "xai_oauth",
+        Arc::new(|| Box::pin(XaiOAuthProvider::cleanup())),
+    );
+    registry.set_cleanup(
+        "huggingface",
+        Arc::new(|| Box::pin(HuggingFaceProvider::cleanup())),
     );
 
     if let Err(e) = load_custom_providers_into_registry(&mut registry) {
@@ -147,13 +224,22 @@ pub async fn get_from_registry(name: &str) -> Result<ProviderEntry> {
         .cloned()
 }
 
-pub async fn create(
+pub async fn inventory_identity(name: &str) -> Result<super::inventory::InventoryIdentityInput> {
+    get_from_registry(name).await?.inventory_identity()
+}
+
+pub async fn create(name: &str, extensions: Vec<ExtensionConfig>) -> Result<Arc<dyn Provider>> {
+    let entry = get_from_registry(name).await?;
+    entry.create(extensions).await
+}
+
+pub async fn create_with_working_dir(
     name: &str,
-    model: ModelConfig,
     extensions: Vec<ExtensionConfig>,
+    working_dir: PathBuf,
 ) -> Result<Arc<dyn Provider>> {
     let entry = get_from_registry(name).await?;
-    entry.create(model, extensions).await
+    entry.create_with_working_dir(extensions, working_dir).await
 }
 
 pub async fn create_with_default_model(
@@ -182,11 +268,9 @@ pub async fn cleanup_provider(name: &str) -> Result<()> {
 
 pub async fn create_with_named_model(
     provider_name: &str,
-    model_name: &str,
     extensions: Vec<ExtensionConfig>,
 ) -> Result<Arc<dyn Provider>> {
-    let config = ModelConfig::new(model_name)?;
-    create(provider_name, config, extensions).await
+    create(provider_name, extensions).await
 }
 
 #[cfg(test)]
@@ -196,40 +280,19 @@ mod tests {
     use std::fs;
 
     #[tokio::test]
-    async fn test_tanzu_declarative_provider_registry_wiring() {
-        let providers_list = providers().await;
-        let tanzu = providers_list
-            .iter()
-            .find(|(m, _)| m.name == "tanzu_ai")
-            .expect("tanzu_ai provider should be registered");
-        let (meta, provider_type) = tanzu;
+    async fn test_huggingface_provider_registry_wiring() {
+        let huggingface = get_from_registry("huggingface")
+            .await
+            .expect("huggingface provider should be registered");
+        let meta = huggingface.metadata();
 
-        // Should be a Declarative (fixed) provider
-        assert_eq!(*provider_type, ProviderType::Declarative);
-
-        assert_eq!(meta.display_name, "VMware Tanzu Platform");
-        assert_eq!(meta.default_model, "openai/gpt-oss-120b");
-
-        // First config key should be TANZU_AI_API_KEY (secret, required)
-        let api_key = meta
+        assert_eq!(huggingface.provider_type(), ProviderType::Preferred);
+        assert_eq!(meta.display_name, "Hugging Face");
+        assert_eq!(meta.default_model, "Qwen/Qwen3-Coder-480B-A35B-Instruct");
+        assert!(meta
             .config_keys
             .iter()
-            .find(|k| k.name == "TANZU_AI_API_KEY")
-            .expect("TANZU_AI_API_KEY config key should exist");
-        assert!(
-            api_key.required,
-            "API key should be required for fixed declarative provider"
-        );
-        assert!(api_key.secret, "API key should be secret");
-
-        // Should have TANZU_AI_ENDPOINT config key (not secret, required)
-        let endpoint = meta
-            .config_keys
-            .iter()
-            .find(|k| k.name == "TANZU_AI_ENDPOINT")
-            .expect("TANZU_AI_ENDPOINT config key should exist");
-        assert!(endpoint.required, "Endpoint should be required");
-        assert!(!endpoint.secret, "Endpoint should not be secret");
+            .any(|key| key.name == "HF_TOKEN" && key.secret));
     }
 
     #[tokio::test]
@@ -328,15 +391,27 @@ mod tests {
             .await
             .expect("custom providers should refresh");
 
-        let provider = create_with_named_model("custom_inf", "kimi-k2.5", Vec::new())
+        let inf_entry = get_from_registry("custom_inf")
             .await
-            .expect("custom_inf provider should be creatable");
-        assert_eq!(provider.get_model_config().context_limit, Some(256_000));
+            .expect("custom_inf entry should exist");
+        let inf_config = inf_entry
+            .normalize_model_config(
+                crate::model_config::model_config_from_user_config("custom_inf", "kimi-k2.5")
+                    .expect("custom_inf model config should resolve"),
+            )
+            .expect("custom_inf model config should normalize");
+        assert_eq!(inf_config.context_limit, Some(256_000));
 
-        let zero_provider = create_with_named_model("custom_zero", "zero-model", Vec::new())
+        let zero_entry = get_from_registry("custom_zero")
             .await
-            .expect("custom_zero provider should be creatable");
-        assert_eq!(zero_provider.get_model_config().context_limit, None);
+            .expect("custom_zero entry should exist");
+        let zero_config = zero_entry
+            .normalize_model_config(
+                crate::model_config::model_config_from_user_config("custom_zero", "zero-model")
+                    .expect("custom_zero model config should resolve"),
+            )
+            .expect("custom_zero model config should normalize");
+        assert_eq!(zero_config.context_limit, None);
 
         std::env::remove_var("GOOSE_PATH_ROOT");
     }

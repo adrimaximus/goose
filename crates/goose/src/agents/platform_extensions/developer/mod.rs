@@ -1,4 +1,5 @@
 pub mod edit;
+pub mod image;
 pub mod shell;
 pub mod tree;
 
@@ -8,6 +9,7 @@ use crate::agents::ToolCallContext;
 use anyhow::Result;
 use async_trait::async_trait;
 use edit::{EditTools, FileEditParams, FileWriteParams};
+use image::{ImageReadParams, ImageTool};
 use indoc::indoc;
 use rmcp::model::{
     CallToolResult, Content, Implementation, InitializeResult, JsonObject, ListToolsResult,
@@ -15,7 +17,7 @@ use rmcp::model::{
 };
 use schemars::{schema_for, JsonSchema};
 use serde_json::Value;
-use shell::{ShellOutput, ShellParams, ShellTool};
+use shell::{shell_display_name, ShellOutput, ShellParams, ShellTool};
 use std::sync::Arc;
 use tokio_util::sync::CancellationToken;
 use tree::{TreeParams, TreeTool};
@@ -27,6 +29,7 @@ pub struct DeveloperClient {
     shell_tool: Arc<ShellTool>,
     edit_tools: Arc<EditTools>,
     tree_tool: Arc<TreeTool>,
+    image_tool: Arc<ImageTool>,
 }
 
 fn developer_instructions() -> &'static str {
@@ -57,21 +60,24 @@ fn developer_instructions() -> &'static str {
             and file sizes. When you need to search, prefer rg which correctly respects gitignored
             content. Then use cat or sed to gather the context you need, always reading before editing.
             Use write and edit to efficiently make changes. Test and verify as appropriate.
+
+            When running Python scripts or commands, always use `python3` instead of `python`.
         "}
     }
 }
 
 impl DeveloperClient {
-    pub fn new(_context: PlatformExtensionContext) -> Result<Self> {
+    pub fn new(context: PlatformExtensionContext) -> Result<Self> {
         let info = InitializeResult::new(ServerCapabilities::builder().enable_tools().build())
             .with_server_info(Implementation::new(EXTENSION_NAME, "1.0.0").with_title("Developer"))
             .with_instructions(developer_instructions());
 
         Ok(Self {
             info,
-            shell_tool: Arc::new(ShellTool::new()?),
+            shell_tool: Arc::new(ShellTool::new(context.use_login_shell_path)?),
             edit_tools: Arc::new(EditTools::new()),
             tree_tool: Arc::new(TreeTool::new()),
+            image_tool: Arc::new(ImageTool::new()),
         })
     }
 
@@ -120,7 +126,14 @@ impl DeveloperClient {
             )),
             Tool::new(
                 "shell".to_string(),
-                "Execute a shell command in the user's default shell in the current dir. Returns an object with stdout and stderr as separate fields. The output of each stream is limited to up to 2000 lines, and longer outputs will be saved to a temporary file.".to_string(),
+                format!(
+                    "Execute a shell command in the current dir. Commands run under `{shell}` \
+                     (set GOOSE_SHELL to override) - write command strings in that shell's \
+                     syntax. Returns an object with stdout and stderr as separate fields. The \
+                     output of each stream is limited to up to 2000 lines, and longer outputs \
+                     will be saved to a temporary file.",
+                    shell = shell_display_name(),
+                ),
                 Self::schema::<ShellParams>(),
             )
             .with_output_schema::<ShellOutput>()
@@ -138,6 +151,18 @@ impl DeveloperClient {
             )
             .annotate(ToolAnnotations::from_raw(
                 Some("Tree".to_string()),
+                Some(true),
+                Some(false),
+                Some(true),
+                Some(false),
+            )),
+            Tool::new(
+                "read_image".to_string(),
+                "Read an image from a local file path or http(s) URL and return it as image content for the model to inspect. Supports png, jpeg, gif, and webp.".to_string(),
+                Self::schema::<ImageReadParams>(),
+            )
+            .annotate(ToolAnnotations::from_raw(
+                Some("Read Image".to_string()),
                 Some(true),
                 Some(false),
                 Some(true),
@@ -196,6 +221,16 @@ impl McpClientTrait for DeveloperClient {
                 ))
                 .with_priority(0.0)])),
             },
+            "read_image" => match Self::parse_args::<ImageReadParams>(arguments) {
+                Ok(params) => Ok(self
+                    .image_tool
+                    .image_read_with_cwd(params, working_dir)
+                    .await),
+                Err(error) => Ok(CallToolResult::error(vec![Content::text(format!(
+                    "Error: {error}"
+                ))
+                .with_priority(0.0)])),
+            },
             _ => Ok(CallToolResult::error(vec![Content::text(format!(
                 "Error: Unknown tool: {name}"
             ))
@@ -223,7 +258,7 @@ mod tests {
             .map(|t| t.name.to_string())
             .collect();
 
-        assert_eq!(names, vec!["write", "edit", "shell", "tree"]);
+        assert_eq!(names, vec!["write", "edit", "shell", "tree", "read_image"]);
     }
 
     fn test_context(data_dir: std::path::PathBuf) -> PlatformExtensionContext {
@@ -231,6 +266,7 @@ mod tests {
             extension_manager: None,
             session_manager: Arc::new(SessionManager::new(data_dir)),
             session: None,
+            use_login_shell_path: false,
         }
     }
 

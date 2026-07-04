@@ -5,15 +5,22 @@ import { Card } from '../ui/card';
 import { Button } from '../ui/button';
 import { Skeleton } from '../ui/skeleton';
 import { MainPanelLayout } from '../Layout/MainPanelLayout';
+<<<<<<< HEAD
 import { getSlashCommands } from '../../api';
 import { client } from '../../api/client.gen';
+=======
+>>>>>>> a0aed81f36076cfe48def4b21c04d7f0d33072e8
 import { errorMessage } from '../../utils/conversionUtils';
 import { getInitialWorkingDir } from '../../utils/workingDir';
 import { defineMessages, useIntl } from '../../i18n';
 import { SearchView } from '../conversation/SearchView';
 import { getSearchShortcutText } from '../../utils/keyboardShortcuts';
+<<<<<<< HEAD
 import CreateSkillModal from './CreateSkillModal';
 import { ConfirmationModal } from '../ui/ConfirmationModal';
+=======
+import { listSkillSources } from '../../acp/sources';
+>>>>>>> a0aed81f36076cfe48def4b21c04d7f0d33072e8
 
 const i18n = defineMessages({
   errorLoadingSkills: {
@@ -162,16 +169,11 @@ export default function SkillsView() {
       setShowSkeleton(true);
       setShowContent(false);
       setError(null);
-      const response = await getSlashCommands({
-        query: { working_dir: getInitialWorkingDir() },
-        throwOnError: true,
-      });
-      const skillEntries: SkillEntry[] = (response.data?.commands ?? [])
-        .filter((cmd) => cmd.command_type === 'Skill')
-        .map((cmd) => ({
-          name: cmd.command,
-          description: cmd.help,
-        }));
+      const sources = await listSkillSources(getInitialWorkingDir());
+      const skillEntries: SkillEntry[] = sources.map((source) => ({
+        name: source.name,
+        description: source.description,
+      }));
       setSkills(skillEntries);
     } catch (err) {
       setError(errorMessage(err, 'Failed to load skills'));
@@ -288,7 +290,12 @@ export default function SkillsView() {
                 variant="outline"
                 size="sm"
                 className="flex items-center gap-2"
+<<<<<<< HEAD
                 onClick={() => setShowCreateModal(true)}
+=======
+                hidden
+                title={intl.formatMessage(i18n.comingSoon)}
+>>>>>>> a0aed81f36076cfe48def4b21c04d7f0d33072e8
               >
                 <Plus className="w-4 h-4" />
                 {intl.formatMessage(i18n.addSkill)}

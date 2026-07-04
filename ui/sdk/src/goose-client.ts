@@ -1,6 +1,5 @@
 import {
   ClientSideConnection,
-  type Client,
   type Stream,
   type InitializeRequest,
   type InitializeResponse,
@@ -23,22 +22,36 @@ import {
   type ListSessionsResponse,
   type ResumeSessionRequest,
   type ResumeSessionResponse,
+  type CloseSessionRequest,
+  type CloseSessionResponse,
   type SetSessionModelRequest,
   type SetSessionModelResponse,
 } from "@agentclientprotocol/sdk";
-import { GooseExtClient } from "./generated/client.gen.js";
+import {
+  GooseExtClient,
+  installGooseExtAgentRequestDispatcher,
+  installGooseExtNotificationDispatcher,
+  type GooseClientCallbacks,
+} from "./generated/client.gen.js";
 import { createHttpStream } from "./http-stream.js";
 
 export class GooseClient {
   private conn: ClientSideConnection;
   private ext: GooseExtClient;
 
-  constructor(toClient: () => Client, streamOrUrl: Stream | string) {
+  constructor(
+    toClient: () => GooseClientCallbacks,
+    streamOrUrl: Stream | string,
+  ) {
     const stream =
       typeof streamOrUrl === "string"
         ? createHttpStream(streamOrUrl)
         : streamOrUrl;
-    this.conn = new ClientSideConnection(toClient, stream);
+    const toAcpClient = () =>
+      installGooseExtAgentRequestDispatcher(
+        installGooseExtNotificationDispatcher(toClient()),
+      );
+    this.conn = new ClientSideConnection(toAcpClient, stream);
     this.ext = new GooseExtClient(this.conn);
   }
 
@@ -92,16 +105,20 @@ export class GooseClient {
     return this.conn.unstable_forkSession(params);
   }
 
-  unstable_listSessions(
-    params: ListSessionsRequest,
-  ): Promise<ListSessionsResponse> {
-    return this.conn.unstable_listSessions(params);
+  listSessions(params: ListSessionsRequest): Promise<ListSessionsResponse> {
+    return this.conn.listSessions(params);
   }
 
   unstable_resumeSession(
     params: ResumeSessionRequest,
   ): Promise<ResumeSessionResponse> {
     return this.conn.unstable_resumeSession(params);
+  }
+
+  unstable_closeSession(
+    params: CloseSessionRequest,
+  ): Promise<CloseSessionResponse> {
+    return this.conn.unstable_closeSession(params);
   }
 
   unstable_setSessionModel(

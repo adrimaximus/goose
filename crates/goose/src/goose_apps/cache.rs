@@ -1,4 +1,5 @@
 use crate::config::paths::Paths;
+use crate::utils::bytes_to_hex;
 use sha2::{Digest, Sha256};
 use std::fs;
 use std::path::PathBuf;
@@ -7,7 +8,6 @@ use tracing::warn;
 use super::app::GooseApp;
 
 static CLOCK_HTML: &str = include_str!("../goose_apps/clock.html");
-static CHAT_HTML: &str = include_str!("../goose_apps/chat.html");
 const APPS_EXTENSION_NAME: &str = "apps";
 
 pub struct McpAppCache {
@@ -24,20 +24,18 @@ impl McpAppCache {
     }
 
     fn ensure_default_apps(&self) {
-        for (uri, html) in [("apps://clock", CLOCK_HTML), ("apps://chat", CHAT_HTML)] {
-            if self.get_app(APPS_EXTENSION_NAME, uri).is_none() {
-                if let Ok(mut app) = GooseApp::from_html(html) {
-                    app.mcp_servers = vec![APPS_EXTENSION_NAME.to_string()];
-                    let _ = self.store_app(&app);
-                }
+        if self.get_app(APPS_EXTENSION_NAME, "apps://clock").is_none() {
+            if let Ok(mut app) = GooseApp::from_html(CLOCK_HTML) {
+                app.mcp_servers = vec![APPS_EXTENSION_NAME.to_string()];
+                let _ = self.store_app(&app);
             }
         }
     }
 
     fn cache_key(extension_name: &str, resource_uri: &str) -> String {
         let input = format!("{}::{}", extension_name, resource_uri);
-        let hash = Sha256::digest(input.as_bytes());
-        format!("{}_{:x}", extension_name, hash)
+        let hash = bytes_to_hex(Sha256::digest(input.as_bytes()));
+        format!("{}_{}", extension_name, hash)
     }
 
     pub fn list_apps(&self) -> Result<Vec<GooseApp>, std::io::Error> {

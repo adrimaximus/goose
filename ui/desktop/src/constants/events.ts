@@ -14,7 +14,6 @@ export enum AppEvents {
   SESSION_STATUS_UPDATE = 'session-status-update',
   ADD_ACTIVE_SESSION = 'add-active-session',
   CLEAR_INITIAL_MESSAGE = 'clear-initial-message',
-  TRIGGER_NEW_CHAT = 'trigger-new-chat',
   MESSAGE_STREAM_FINISHED = 'message-stream-finished',
   MESSAGE_CONTENT = 'goose:message-content',
   SCROLL_CHAT_TO_BOTTOM = 'scroll-chat-to-bottom',

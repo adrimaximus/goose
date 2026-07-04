@@ -184,9 +184,17 @@
   --text-inverse: var(--color-white);
   --text-danger: var(--color-red-200);
 
+<<<<<<< HEAD
   /* Selection color — brand accent */
   --highlight-color: rgba(59, 130, 246, 0.3);
   --highlight-current: rgba(59, 130, 246, 0.5);
+=======
+  --color-inline-code: #c2410c;
+
+  /* Search highlighting */
+  --highlight-color: rgba(255, 213, 0, 0.5);
+  --highlight-current: rgba(252, 213, 3, 0.6);
+>>>>>>> a0aed81f36076cfe48def4b21c04d7f0d33072e8
 
   /* Sidebar aliases (shadcn sidebar component convention) */
   --sidebar: var(--color-background-primary);
@@ -207,9 +215,17 @@
   --text-inverse: var(--color-black);
   --text-danger: var(--color-red-100);
 
+<<<<<<< HEAD
   /* Selection color — brand accent */
   --highlight-color: rgba(59, 130, 246, 0.3);
   --highlight-current: rgba(59, 130, 246, 0.5);
+=======
+  --color-inline-code: #ff7235;
+
+  /* Search highlighting */
+  --highlight-color: rgba(255, 213, 0, 0.5);
+  --highlight-current: rgba(252, 213, 3, 0.6);
+>>>>>>> a0aed81f36076cfe48def4b21c04d7f0d33072e8
 
   /* Sidebar aliases */
   --sidebar: var(--color-background-primary);
@@ -541,13 +557,24 @@ body {
 }
 
 .bg-inline-code {
+<<<<<<< HEAD
   border-radius: 6px;
   color: var(--color-neutral-400);
+=======
+  border-radius: 4px;
+  color: var(--color-inline-code);
+  background-color: var(--color-neutral-50);
+>>>>>>> a0aed81f36076cfe48def4b21c04d7f0d33072e8
   font-family: monospace;
   font-size: 0.875em;
   font-style: normal;
   font-weight: 400;
   line-height: normal;
+  padding: 2px 4px;
+}
+
+.dark .bg-inline-code {
+  background-color: var(--color-neutral-900);
 }
 
 .bg-inline-code:before {
@@ -556,12 +583,6 @@ body {
 
 pre:has(> code.bg-inline-code) {
   padding: 1em;
-}
-
-li > code.bg-inline-code,
-p > code.bg-inline-code {
-  color: var(--color-block-orange);
-  padding: 2px 4px;
 }
 
 .bg-inline-code:after {

@@ -1,6 +1,7 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
-import { transcribeDictation, getDictationConfig, DictationProvider } from '../api';
+import { getDictationConfig, transcribeDictation } from '../acp/dictation';
 import { useConfig } from '../components/ConfigContext';
+import type { DictationProvider } from '../types/dictation';
 import { errorMessage } from '../utils/conversionUtils';
 
 interface UseAudioRecorderOptions {
@@ -123,8 +124,8 @@ export const useAudioRecorder = ({ onTranscription, onError }: UseAudioRecorderO
           setProvider(null);
           return;
         }
-        const resp = await getDictationConfig();
-        setIsEnabled(!!resp.data?.[pref]?.configured);
+        const providers = await getDictationConfig();
+        setIsEnabled(!!providers[pref]?.configured);
         setProvider(pref);
       } catch (error) {
         console.error('Failed to check dictation config:', error);
@@ -145,6 +146,7 @@ export const useAudioRecorder = ({ onTranscription, onError }: UseAudioRecorderO
     try {
       const wav = new Blob([encodeWav(samples, SAMPLE_RATE)], { type: 'audio/wav' });
       const base64 = await blobToBase64(wav);
+<<<<<<< HEAD
       const langValue = await read('voice_dictation_language', false);
       const lang = (langValue as string) || 'auto';
       const result = await transcribeDictation({
@@ -158,6 +160,11 @@ export const useAudioRecorder = ({ onTranscription, onError }: UseAudioRecorderO
       });
       if (result.data?.text) {
         onTranscriptionRef.current(result.data.text);
+=======
+      const text = await transcribeDictation(base64, 'audio/wav', prov);
+      if (text) {
+        onTranscriptionRef.current(text);
+>>>>>>> a0aed81f36076cfe48def4b21c04d7f0d33072e8
       }
     } catch (error) {
       onErrorRef.current(errorMessage(error));

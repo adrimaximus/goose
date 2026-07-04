@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { Box, Text, useInput, useStdout } from "ink";
-import type { GooseClient, ProviderDetailEntry } from "@aaif/goose-sdk";
+import type { GooseClient, ProviderInventoryEntryDto } from "@aaif/goose-sdk";
 import {
   CRANBERRY,
   TEAL,
@@ -37,15 +37,13 @@ interface ConfigureProps {
 }
 
 interface ModelSelectorProps {
-  client: GooseClient;
-  provider: ProviderDetailEntry;
+  provider: ProviderInventoryEntryDto;
   height: number;
   onSelect: (model: string) => void;
   onBack: () => void;
 }
 
 const ModelSelector = React.memo(function ModelSelector({
-  client,
   provider,
   height,
   onSelect,
@@ -53,7 +51,6 @@ const ModelSelector = React.memo(function ModelSelector({
 }: ModelSelectorProps) {
   const [loading, setLoading] = useState(true);
   const [models, setModels] = useState<string[]>([]);
-  const [error, setError] = useState<string | null>(null);
   const [selectedIdx, setSelectedIdx] = useState(0);
   const [searchQuery, setSearchQuery] = useState("");
   const [manualEntry, setManualEntry] = useState(false);
@@ -61,42 +58,14 @@ const ModelSelector = React.memo(function ModelSelector({
   const columns = stdout?.columns ?? 80;
 
   useEffect(() => {
-    let cancelled = false;
-    const timeoutId = setTimeout(() => {
-      if (!cancelled) {
-        setError("Request timed out. The provider may be slow to respond.");
-        setLoading(false);
-      }
-    }, LOAD_MODELS_TIMEOUT_MS);
-
-    (async () => {
-      try {
-        setLoading(true);
-        setError(null);
-        const resp = await client.goose.GooseProvidersModels({
-          providerName: provider.name,
-        });
-        if (!cancelled) {
-          setModels(resp.models);
-          const defaultIdx = resp.models.findIndex((m) => m === provider.defaultModel);
-          setSelectedIdx(defaultIdx >= 0 ? defaultIdx : 0);
-          setLoading(false);
-          clearTimeout(timeoutId);
-        }
-      } catch (e: unknown) {
-        if (!cancelled) {
-          setError(e instanceof Error ? e.message : String(e));
-          setLoading(false);
-          clearTimeout(timeoutId);
-        }
-      }
-    })();
-
-    return () => {
-      cancelled = true;
-      clearTimeout(timeoutId);
-    };
-  }, [client, provider.name, provider.defaultModel]);
+    const availableModels = provider.models.map((model) => model.id);
+    setModels(availableModels);
+    const defaultIdx = availableModels.findIndex(
+      (model) => model === provider.defaultModel,
+    );
+    setSelectedIdx(defaultIdx >= 0 ? defaultIdx : 0);
+    setLoading(false);
+  }, [provider.models, provider.defaultModel]);
 
   const filtered = (() => {
     if (!searchQuery) return models;
@@ -187,10 +156,14 @@ const ModelSelector = React.memo(function ModelSelector({
       <Box flexDirection="column" height={height} width={columns} paddingX={2}>
         <Box marginTop={1} />
         <Box justifyContent="center" marginBottom={1}>
-          <Text color={TEXT_PRIMARY} bold>◆ Select model ◆</Text>
+          <Text color={TEXT_PRIMARY} bold>
+            ◆ Select model ◆
+          </Text>
         </Box>
         <Box justifyContent="center" marginBottom={2}>
-          <Text color={TEXT_DIM}>Loading models for {provider.displayName}…</Text>
+          <Text color={TEXT_DIM}>
+            Loading models for {provider.providerName}…
+          </Text>
         </Box>
         <Box justifyContent="center" flexGrow={1} alignItems="center">
           <Spinner idx={0} />
@@ -199,19 +172,23 @@ const ModelSelector = React.memo(function ModelSelector({
     );
   }
 
-  if (error) {
+  if (models.length === 0) {
     return (
       <Box flexDirection="column" height={height} width={columns} paddingX={2}>
         <Box marginTop={1} />
         <Box justifyContent="center" marginBottom={1}>
-          <Text color={TEXT_PRIMARY} bold>◆ Select model ◆</Text>
+          <Text color={TEXT_PRIMARY} bold>
+            ◆ Select model ◆
+          </Text>
         </Box>
         <Box justifyContent="center" marginBottom={2}>
-          <Text color={GOLD}>⚠ Failed to load models</Text>
+          <Text color={GOLD}>⚠ No models available</Text>
         </Box>
         <Box justifyContent="center">
           <Box width={maxWidth}>
-            <Text color={TEXT_DIM} wrap="wrap">{error}</Text>
+            <Text color={TEXT_DIM} wrap="wrap">
+              This provider does not currently expose any models in inventory.
+            </Text>
           </Box>
         </Box>
         <Box justifyContent="center" marginTop={2}>
@@ -224,18 +201,23 @@ const ModelSelector = React.memo(function ModelSelector({
   if (manualEntry) {
     const inputWidth = Math.min(60, maxWidth - 4);
     const displayText = searchQuery || "type model name…";
-    const truncatedText = displayText.length > inputWidth - 6
-      ? displayText.slice(0, inputWidth - 9) + "…"
-      : displayText;
+    const truncatedText =
+      displayText.length > inputWidth - 6
+        ? displayText.slice(0, inputWidth - 9) + "…"
+        : displayText;
 
     return (
       <Box flexDirection="column" height={height} width={columns} paddingX={2}>
         <Box marginTop={1} />
         <Box justifyContent="center" marginBottom={1}>
-          <Text color={TEXT_PRIMARY} bold>◆ Enter model name ◆</Text>
+          <Text color={TEXT_PRIMARY} bold>
+            ◆ Enter model name ◆
+          </Text>
         </Box>
         <Box justifyContent="center" marginBottom={2}>
-          <Text color={TEXT_DIM}>Type a model identifier for {provider.displayName}</Text>
+          <Text color={TEXT_DIM}>
+            Type a model identifier for {provider.providerName}
+          </Text>
         </Box>
 
         <Box justifyContent="center">
@@ -245,7 +227,9 @@ const ModelSelector = React.memo(function ModelSelector({
             paddingX={2}
             width={inputWidth}
           >
-            <Text color={GOLD} bold>{"❯ "}</Text>
+            <Text color={GOLD} bold>
+              {"❯ "}
+            </Text>
             <Text color={searchQuery ? TEXT_PRIMARY : TEXT_DIM}>
               {truncatedText}
             </Text>
@@ -267,10 +251,12 @@ const ModelSelector = React.memo(function ModelSelector({
       {/* Header */}
       <Box marginTop={1} />
       <Box justifyContent="center" marginBottom={1}>
-        <Text color={TEXT_PRIMARY} bold>◆ Select model ◆</Text>
+        <Text color={TEXT_PRIMARY} bold>
+          ◆ Select model ◆
+        </Text>
       </Box>
       <Box justifyContent="center" marginBottom={2}>
-        <Text color={TEXT_DIM}>Choose a model for {provider.displayName}</Text>
+        <Text color={TEXT_DIM}>Choose a model for {provider.providerName}</Text>
       </Box>
 
       {/* Search Bar */}
@@ -281,7 +267,9 @@ const ModelSelector = React.memo(function ModelSelector({
           paddingX={2}
           width={searchBoxWidth}
         >
-          <Text color={CRANBERRY} bold>{"❯ "}</Text>
+          <Text color={CRANBERRY} bold>
+            {"❯ "}
+          </Text>
           <Box width={searchBoxWidth - 8}>
             <Text color={searchQuery ? TEXT_PRIMARY : TEXT_DIM} wrap="truncate">
               {searchQuery || "search models…"}
@@ -293,7 +281,11 @@ const ModelSelector = React.memo(function ModelSelector({
       {/* Model List */}
       <Box flexDirection="column" flexGrow={1} justifyContent="flex-start">
         {filtered.length === 0 ? (
-          <Box justifyContent="center" alignItems="center" height={Math.max(listHeight, 1)}>
+          <Box
+            justifyContent="center"
+            alignItems="center"
+            height={Math.max(listHeight, 1)}
+          >
             <Text color={TEXT_DIM}>No matching models</Text>
           </Box>
         ) : (
@@ -310,16 +302,20 @@ const ModelSelector = React.memo(function ModelSelector({
                   const active = idx === selectedIdx;
                   const isDefault = model === provider.defaultModel;
                   const modelWidth = maxWidth - 8;
-                  const truncatedModel = model.length > modelWidth
-                    ? model.slice(0, modelWidth - 1) + "…"
-                    : model;
+                  const truncatedModel =
+                    model.length > modelWidth
+                      ? model.slice(0, modelWidth - 1) + "…"
+                      : model;
 
                   return (
                     <Box key={model}>
                       <Text color={active ? GOLD : TEXT_DIM}>
                         {active ? "▸ " : "  "}
                       </Text>
-                      <Text color={active ? TEXT_PRIMARY : TEXT_DIM} bold={active}>
+                      <Text
+                        color={active ? TEXT_PRIMARY : TEXT_DIM}
+                        bold={active}
+                      >
                         {truncatedModel}
                       </Text>
                       {isDefault && <Text color={TEAL}> (default)</Text>}
@@ -359,8 +355,9 @@ export default function ConfigureScreen({
   initialIntent,
 }: ConfigureProps) {
   const [phase, setPhase] = useState<Phase>("loading");
-  const [providers, setProviders] = useState<ProviderDetailEntry[]>([]);
-  const [selectedProvider, setSelectedProvider] = useState<ProviderDetailEntry | null>(null);
+  const [providers, setProviders] = useState<ProviderInventoryEntryDto[]>([]);
+  const [selectedProvider, setSelectedProvider] =
+    useState<ProviderInventoryEntryDto | null>(null);
   const [errorMsg, setErrorMsg] = useState("");
   const [spinIdx, setSpinIdx] = useState(0);
   const [fetchKey, setFetchKey] = useState(0);
@@ -378,21 +375,23 @@ export default function ConfigureScreen({
 
     (async () => {
       try {
-        const resp = await client.goose.GooseProvidersDetails({});
+        const resp = await client.goose.providersList_unstable({
+          providerIds: [],
+        });
         if (cancelled) return;
-        const sorted = [...resp.providers].sort((a, b) => {
+        const sorted = [...resp.entries].sort((a, b) => {
           const aP = a.providerType === "Preferred" ? 0 : 1;
           const bP = b.providerType === "Preferred" ? 0 : 1;
           if (aP !== bP) return aP - bP;
-          return a.displayName.localeCompare(b.displayName);
+          return a.providerName.localeCompare(b.providerName);
         });
         setProviders(sorted);
 
         if (initialIntent === "model") {
           try {
-            const cfg = await client.goose.GooseConfigRead({ key: "GOOSE_PROVIDER" });
+            const cfg = await client.goose.defaultsRead_unstable({});
             if (cancelled) return;
-            const current = sorted.find((p) => p.name === cfg.value);
+            const current = sorted.find((p) => p.providerId === cfg.providerId);
             if (current) {
               setSelectedProvider(current);
               setPendingConfigValues({});
@@ -419,23 +418,29 @@ export default function ConfigureScreen({
   }, [client, fetchKey, initialIntent]);
 
   const applyProviderModel = useCallback(
-    async (provider: ProviderDetailEntry, model: string, configValues: Record<string, string>) => {
+    async (
+      provider: ProviderInventoryEntryDto,
+      model: string,
+      configValues: Record<string, string>,
+    ) => {
       setPhase("saving");
       try {
-        for (const [key, value] of Object.entries(configValues)) {
-          const configKey = provider.configKeys.find((k) => k.name === key);
-          if (configKey?.secret) {
-            await client.goose.GooseSecretUpsert({ key, value });
-          } else {
-            await client.goose.GooseConfigUpsert({ key, value });
-          }
-        }
-        await client.goose.GooseConfigUpsert({ key: "GOOSE_PROVIDER", value: provider.name });
-        await client.goose.GooseConfigUpsert({ key: "GOOSE_MODEL", value: model });
-        await client.goose.GooseSessionProviderUpdate({
+        await client.goose.providersConfigSave_unstable({
+          providerId: provider.providerId,
+          fields: Object.entries(configValues).map(([key, value]) => ({
+            key,
+            value,
+          })),
+        });
+        await client.setSessionConfigOption({
           sessionId,
-          provider: provider.name,
-          model,
+          configId: "provider",
+          value: provider.providerId,
+        });
+        await client.setSessionConfigOption({
+          sessionId,
+          configId: "model",
+          value: model,
         });
         onComplete();
       } catch (e: unknown) {
@@ -446,15 +451,17 @@ export default function ConfigureScreen({
     [client, sessionId, onComplete],
   );
 
-  const [pendingConfigValues, setPendingConfigValues] = useState<Record<string, string>>({});
+  const [pendingConfigValues, setPendingConfigValues] = useState<
+    Record<string, string>
+  >({});
 
   const handleProviderSelected = useCallback(
-    (provider: ProviderDetailEntry) => {
+    (provider: ProviderInventoryEntryDto) => {
       const keys = provider.configKeys.filter(
         (k) => k.required && !k.oauthFlow && !k.deviceCodeFlow,
       );
       setSelectedProvider(provider);
-      if (keys.length > 0 && !provider.isConfigured) {
+      if (keys.length > 0 && !provider.configured) {
         setPhase("configure");
       } else {
         setPendingConfigValues({});
@@ -488,15 +495,19 @@ export default function ConfigureScreen({
   }, []);
 
   if (phase === "loading" || phase === "loading_models" || phase === "saving") {
-    const label = 
-      phase === "loading" ? "Loading providers…" : 
-      phase === "loading_models" ? "Loading models…" :
-      "Applying changes…";
+    const label =
+      phase === "loading"
+        ? "Loading providers…"
+        : phase === "loading_models"
+          ? "Loading models…"
+          : "Applying changes…";
     return (
       <Box flexDirection="column" height={height} width={width} paddingX={2}>
         <Box marginTop={1} />
         <Box justifyContent="center" marginBottom={1}>
-          <Text color={TEXT_PRIMARY} bold>◆ Configure provider ◆</Text>
+          <Text color={TEXT_PRIMARY} bold>
+            ◆ Configure provider ◆
+          </Text>
         </Box>
         <Box justifyContent="center" marginBottom={2}>
           <Text color={TEXT_DIM}>{label}</Text>
@@ -513,7 +524,9 @@ export default function ConfigureScreen({
       <Box flexDirection="column" height={height} width={width} paddingX={2}>
         <Box marginTop={1} />
         <Box justifyContent="center" marginBottom={1}>
-          <Text color={TEXT_PRIMARY} bold>◆ Configure provider ◆</Text>
+          <Text color={TEXT_PRIMARY} bold>
+            ◆ Configure provider ◆
+          </Text>
         </Box>
         <ErrorScreen errorMsg={errorMsg} onRetry={handleRetry} />
       </Box>
@@ -537,7 +550,6 @@ export default function ConfigureScreen({
   if (phase === "select_model" && selectedProvider) {
     return (
       <ModelSelector
-        client={client}
         provider={selectedProvider}
         height={height}
         onSelect={handleModelSelected}
