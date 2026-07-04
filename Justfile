@@ -1,6 +1,5 @@
 # Justfile
 
-mod goose2 'ui/goose2'
 
 # list all tasks
 default:
@@ -81,6 +80,9 @@ copy-binary BUILD_MODE="release":
     @if [ -f ./target/{{BUILD_MODE}}/goosed ]; then \
         echo "Copying goosed binary from target/{{BUILD_MODE}}..."; \
         cp -p ./target/{{BUILD_MODE}}/goosed ./ui/desktop/src/bin/; \
+        if [ "$(uname)" = "Darwin" ]; then \
+            codesign --force --sign - ./ui/desktop/src/bin/goosed; \
+        fi; \
     else \
         echo "Binary not found in target/{{BUILD_MODE}}"; \
         exit 1; \
@@ -88,6 +90,9 @@ copy-binary BUILD_MODE="release":
     @if [ -f ./target/{{BUILD_MODE}}/goose ]; then \
         echo "Copying goose CLI binary from target/{{BUILD_MODE}}..."; \
         cp -p ./target/{{BUILD_MODE}}/goose ./ui/desktop/src/bin/; \
+        if [ "$(uname)" = "Darwin" ]; then \
+            codesign --force --sign - ./ui/desktop/src/bin/goose; \
+        fi; \
     else \
         echo "goose CLI binary not found in target/{{BUILD_MODE}}"; \
         exit 1; \
@@ -148,6 +153,24 @@ debug-ui:
     pnpm install && \
     pnpm run start-gui
 
+# Run dev frontend alongside production Betterworks app
+# Auto-detects running goosed port and secret key
+dev-ui:
+    @echo "🚀 Starting dev frontend alongside production app..."
+    @SECRET=$$(ps eww -ax 2>/dev/null | grep -o 'GOOSE_SERVER__SECRET_KEY=[^ ]*' | head -1 | cut -d= -f2); \
+    PORT=$$(ps eww -ax 2>/dev/null | grep -o 'GOOSE_API_HOST=https://127.0.0.1:[0-9]*' | head -1 | grep -o '[0-9]*$$'); \
+    if [ -z "$$SECRET" ] || [ -z "$$PORT" ]; then \
+        echo "❌ No running goosed found. Start Betterworks first or run: just run-ui"; \
+        exit 1; \
+    fi; \
+    echo "📡 Found goosed on port $$PORT"; \
+    cd ui/desktop && \
+    GOOSE_EXTERNAL_BACKEND=true \
+    GOOSE_PORT=$$PORT \
+    GOOSE_SERVER__SECRET_KEY=$$SECRET \
+    pnpm install && \
+    pnpm run start-gui
+
 # Run UI with main process debugging enabled
 # To debug main process:
 # 1. Run: just debug-ui-main-process
@@ -169,8 +192,19 @@ package-ui:
     @echo "Packaging desktop app..."
     cd ui/desktop && pnpm install && pnpm run package
     @echo "Signing with entitlements..."
-    codesign --force --deep --sign - --entitlements ui/desktop/entitlements.plist ui/desktop/out/Goose-darwin-arm64/Goose.app
-    @echo "Done! Launch with: open ui/desktop/out/Goose-darwin-arm64/Goose.app"
+    codesign --force --deep --sign - --entitlements ui/desktop/entitlements.plist ui/desktop/out/Betterworks-darwin-arm64/Betterworks.app
+    @echo "Done! Launch with: open ui/desktop/out/Betterworks-darwin-arm64/Betterworks.app"
+
+# Package Betterworks.app and install to /Applications
+package-betterworks:
+    @just package-ui
+    @echo "Installing Betterworks.app to /Applications..."
+    @if [ -d "/Applications/Betterworks.app" ]; then \
+        echo "Removing existing Betterworks.app..."; \
+        rm -rf /Applications/Betterworks.app; \
+    fi
+    cp -r ui/desktop/out/Betterworks-darwin-arm64/Betterworks.app /Applications/
+    @echo "✅ Betterworks.app installed to /Applications"
 
 # Run UI with latest (Windows version)
 run-ui-windows:
