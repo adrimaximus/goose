@@ -1,10 +1,6 @@
-type SourceLocation = { fileName: string; lineNumber: string };
-
-declare global {
-  // eslint-disable-next-line no-var
-  var __JSX_SOURCES__: WeakMap<object, SourceLocation> | undefined;
-}
-
-export function getElementSource(element: object): SourceLocation | null {
-  return globalThis.__JSX_SOURCES__?.get(element) ?? null;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function getFiberFromElement(element: HTMLElement): any {
+    const key = Object.keys(element).find(k => k.startsWith('__reactFiber$'));
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    return key ? (element as any)[key] : null;
 }

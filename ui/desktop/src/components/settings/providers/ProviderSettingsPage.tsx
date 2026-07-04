@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { ScrollArea } from '../../ui/scroll-area';
 import BackButton from '../../ui/BackButton';
 import ProviderGrid from './ProviderGrid';
+import { invalidateProviderModelsCache } from '../models/modelInterface';
 import { useConfig } from '../../ConfigContext';
 import { ProviderDetails } from '../../../api';
 import { createNavigationHandler } from '../../../utils/navigationUtils';
@@ -74,6 +75,7 @@ export default function ProviderSettings({
   // This function will be passed to ProviderGrid for manual refreshes after config changes
   const refreshProviders = useCallback(async () => {
     if (initialLoadDone.current) {
+      invalidateProviderModelsCache();
       const result = await getProviders(true);
       if (result) setProviders(result);
     }

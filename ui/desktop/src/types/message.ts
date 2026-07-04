@@ -30,10 +30,6 @@ export interface UserInput {
 export function createUserMessage(text: string, images?: ImageData[]): Message {
   const content: Message['content'] = [];
 
-  if (text.trim()) {
-    content.push({ type: 'text', text });
-  }
-
   if (images && images.length > 0) {
     images.forEach((img) => {
       content.push({
@@ -42,6 +38,14 @@ export function createUserMessage(text: string, images?: ImageData[]): Message {
         mimeType: img.mimeType,
       });
     });
+
+    if (!text.trim()) {
+      content.unshift({ type: 'text', text: 'The user has attached file(s). Please analyze and respond to the attached content.' });
+    } else {
+      content.unshift({ type: 'text', text });
+    }
+  } else if (text.trim()) {
+    content.push({ type: 'text', text });
   }
 
   return {

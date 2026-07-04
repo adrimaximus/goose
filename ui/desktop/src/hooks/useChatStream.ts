@@ -50,6 +50,7 @@ interface UseChatStreamReturn {
   setRecipeUserParams: (values: Record<string, string>) => Promise<void>;
   stopStreaming: () => void;
   sessionLoadError?: string;
+  replyError?: string;
   tokenState: TokenState;
   notifications: Map<string, NotificationEvent[]>;
   onMessageUpdate: (
@@ -64,6 +65,7 @@ interface StreamState {
   session: Session | undefined;
   chatState: ChatState;
   sessionLoadError: string | undefined;
+  replyError: string | undefined;
   tokenState: TokenState;
   notifications: NotificationEvent[];
 }
@@ -73,6 +75,7 @@ type StreamAction =
   | { type: 'SET_SESSION'; payload: Session | undefined }
   | { type: 'SET_CHAT_STATE'; payload: ChatState }
   | { type: 'SET_SESSION_LOAD_ERROR'; payload: string | undefined }
+  | { type: 'SET_REPLY_ERROR'; payload: string | undefined }
   | { type: 'SET_TOKEN_STATE'; payload: TokenState }
   | { type: 'ADD_NOTIFICATION'; payload: NotificationEvent }
   | { type: 'CLEAR_NOTIFICATIONS' }
@@ -103,6 +106,7 @@ const initialState: StreamState = {
   session: undefined,
   chatState: ChatState.Idle,
   sessionLoadError: undefined,
+  replyError: undefined,
   tokenState: initialTokenState,
   notifications: [],
 };
@@ -121,6 +125,9 @@ function streamReducer(state: StreamState, action: StreamAction): StreamState {
     case 'SET_SESSION_LOAD_ERROR':
       return { ...state, sessionLoadError: action.payload };
 
+    case 'SET_REPLY_ERROR':
+      return { ...state, replyError: action.payload };
+
     case 'SET_TOKEN_STATE':
       return { ...state, tokenState: action.payload };
 
@@ -138,6 +145,7 @@ function streamReducer(state: StreamState, action: StreamAction): StreamState {
         tokenState: action.payload.tokenState,
         chatState: ChatState.Idle,
         sessionLoadError: undefined,
+        replyError: undefined,
       };
 
     case 'RESET_FOR_NEW_SESSION':
@@ -146,6 +154,7 @@ function streamReducer(state: StreamState, action: StreamAction): StreamState {
         messages: [],
         session: undefined,
         sessionLoadError: undefined,
+        replyError: undefined,
         chatState: ChatState.LoadingConversation,
       };
 
@@ -154,19 +163,20 @@ function streamReducer(state: StreamState, action: StreamAction): StreamState {
         ...state,
         chatState: ChatState.Streaming,
         notifications: [],
+        replyError: undefined,
       };
 
     case 'STREAM_ERROR':
       return {
         ...state,
-        sessionLoadError: action.payload,
+        replyError: action.payload,
         chatState: ChatState.Idle,
       };
 
     case 'STREAM_FINISH':
       return {
         ...state,
-        sessionLoadError: action.payload,
+        replyError: action.payload,
         chatState: ChatState.Idle,
       };
 
@@ -1082,6 +1092,7 @@ export function useChatStream({
 
   return {
     sessionLoadError: state.sessionLoadError,
+    replyError: state.replyError,
     messages: maybe_cached_messages,
     session: maybe_cached_session,
     chatState: state.chatState,

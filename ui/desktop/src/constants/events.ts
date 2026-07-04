@@ -8,6 +8,8 @@ export enum AppEvents {
   SESSION_RENAMED = 'session-renamed',
   SESSION_FORKED = 'session-forked',
   SESSION_UPDATED = 'session-updated',
+  SESSION_ARCHIVED = 'session-archived',
+  SESSION_UNARCHIVED = 'session-unarchived',
   SESSION_NEEDS_NAME_UPDATE = 'session-needs-name-update',
   SESSION_STATUS_UPDATE = 'session-status-update',
   ADD_ACTIVE_SESSION = 'add-active-session',

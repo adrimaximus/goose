@@ -1,7 +1,6 @@
 import { defineConfig } from 'vite';
 import tailwindcss from '@tailwindcss/vite';
-import react from '@vitejs/plugin-react';
-import { jsxSourcePlugin } from './vite.plugins/jsx-source-plugin';
+import react from '@vitejs/plugin-react-swc';
 
 // https://vitejs.dev/config
 export default defineConfig({
@@ -15,17 +14,15 @@ export default defineConfig({
   },
   optimizeDeps: {
     entries: ['index.html'],
-    force: true,
   },
   define: {
     'process.env.GOOSE_TUNNEL': JSON.stringify(process.env.GOOSE_TUNNEL !== 'no' && process.env.GOOSE_TUNNEL !== 'none'),
   },
 
   plugins: [
-    process.env.NODE_ENV !== 'production' ? jsxSourcePlugin() : null,
     tailwindcss(),
     react(),
-  ].filter(Boolean),
+  ],
 
   build: {
     target: 'esnext'

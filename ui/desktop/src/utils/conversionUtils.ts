@@ -40,7 +40,7 @@ export async function compressImageDataUrl(dataUrl: string): Promise<string> {
   return new Promise((resolve, reject) => {
     const img = new globalThis.Image();
     img.onload = () => {
-      const maxDim = 1024;
+      const maxDim = 2048;
       const scale = Math.min(1, maxDim / Math.max(img.width, img.height));
       const width = Math.floor(img.width * scale);
       const height = Math.floor(img.height * scale);
@@ -55,7 +55,7 @@ export async function compressImageDataUrl(dataUrl: string): Promise<string> {
       }
       ctx.drawImage(img, 0, 0, width, height);
 
-      resolve(canvas.toDataURL('image/jpeg', 0.85));
+      resolve(canvas.toDataURL('image/jpeg', 0.92));
     };
     img.onerror = () => reject(new Error('Failed to load image'));
     img.src = dataUrl;

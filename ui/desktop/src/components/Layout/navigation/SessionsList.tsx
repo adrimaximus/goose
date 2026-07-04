@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useRef } from 'react';
 import { MessageSquare, ChefHat, Plus, MoreVertical, Trash2, GripVertical, History, Archive, ArchiveRestore } from 'lucide-react';
 import { motion, AnimatePresence, Reorder, useDragControls } from 'framer-motion';
 import { SessionIndicators } from '../../SessionIndicators';
@@ -123,6 +123,7 @@ const SessionItem: React.FC<SessionItemProps> = ({
   isStreaming,
 }) => {
   const dragControls = useDragControls();
+  const isDragging = useRef(false);
 
   const hasError = status?.streamState === 'error';
   const hasUnread = status?.hasUnreadActivity ?? false;
@@ -146,12 +147,21 @@ const SessionItem: React.FC<SessionItemProps> = ({
           onSessionClick(session.id);
         }
       }}
+      onDragEnd={() => {
+        isDragging.current = false;
+      }}
     >
       <GripVertical
         className="w-3 h-3 flex-shrink-0 text-text-tertiary opacity-0 group-hover/session:opacity-100 transition-opacity cursor-grab active:cursor-grabbing"
         onPointerDown={(e) => {
           e.preventDefault();
-          dragControls.start(e);
+          if (isDragging.current) {
+            dragControls.cancel();
+            isDragging.current = false;
+          } else {
+            isDragging.current = true;
+            dragControls.start(e);
+          }
         }}
       />
       {session.recipe ? (
@@ -280,20 +290,24 @@ export const SessionsList: React.FC<SessionsListProps> = ({
   );
 
   const handleArchiveSession = useCallback(async (session: Session) => {
+    window.dispatchEvent(
+      new CustomEvent(AppEvents.SESSION_ARCHIVED, { detail: { sessionId: session.id } }),
+    );
     try {
       await archiveSessionApi(session.id);
-      window.dispatchEvent(new CustomEvent(AppEvents.SESSION_UPDATED));
     } catch (error) {
       console.error('Error archiving session:', error);
+      window.dispatchEvent(new CustomEvent(AppEvents.SESSION_UPDATED));
     }
   }, []);
 
   const handleUnarchiveSession = useCallback(async (session: Session) => {
+    window.dispatchEvent(new CustomEvent(AppEvents.SESSION_UNARCHIVED));
     try {
       await unarchiveSessionApi(session.id);
-      window.dispatchEvent(new CustomEvent(AppEvents.SESSION_UPDATED));
     } catch (error) {
       console.error('Error unarchiving session:', error);
+      window.dispatchEvent(new CustomEvent(AppEvents.SESSION_UPDATED));
     }
   }, []);
 

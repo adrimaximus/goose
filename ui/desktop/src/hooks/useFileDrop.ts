@@ -54,7 +54,7 @@ export const useFileDrop = () => {
             name: file.name,
             type: file.type,
             isImage,
-            isLoading: isImage, // Only images need loading state for preview generation
+            isLoading: isImage,
           };
         } catch (error) {
           console.error('Error processing file:', file.name, error);
@@ -79,12 +79,11 @@ export const useFileDrop = () => {
           reader.onload = async (event) => {
             const dataUrl = event.target?.result as string;
             try {
-              // Compress the image
-              const compressedDataUrl = await compressImageDataUrl(dataUrl);
+              const finalDataUrl = await compressImageDataUrl(dataUrl);
               setDroppedFiles((prev) =>
                 prev.map((f) =>
                   f.id === droppedFile.id
-                    ? { ...f, dataUrl: compressedDataUrl, isLoading: false }
+                    ? { ...f, dataUrl: finalDataUrl, isLoading: false }
                     : f
                 )
               );
@@ -93,7 +92,7 @@ export const useFileDrop = () => {
               setDroppedFiles((prev) =>
                 prev.map((f) =>
                   f.id === droppedFile.id
-                    ? { ...f, error: 'Failed to compress image', isLoading: false }
+                    ? { ...f, error: 'Failed to process file', isLoading: false }
                     : f
                 )
               );

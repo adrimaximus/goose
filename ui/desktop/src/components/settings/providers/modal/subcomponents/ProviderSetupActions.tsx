@@ -8,7 +8,7 @@ const i18n = defineMessages({
   cannotDeleteActive: {
     id: 'providerSetupActions.cannotDeleteActive',
     defaultMessage:
-      'You cannot delete {providerName} while it\'s currently in use. Please switch to a different model before deleting this provider.',
+      "You cannot delete {providerName} while it's currently in use. Please switch to a different model before deleting this provider.",
   },
   ok: {
     id: 'providerSetupActions.ok',
@@ -51,13 +51,9 @@ interface ProviderSetupActionsProps {
   canDelete?: boolean;
   providerName?: string;
   primaryParameters?: ConfigKey[];
-  isActiveProvider?: boolean; // Made optional with default false
+  isActiveProvider?: boolean;
 }
 
-/**
- * Renders the action buttons at the bottom of the provider modal.
- * Includes submit, cancel, and delete functionality with confirmation.
- */
 export default function ProviderSetupActions({
   onCancel,
   onSubmit,
@@ -68,111 +64,69 @@ export default function ProviderSetupActions({
   canDelete,
   providerName,
   primaryParameters,
-  isActiveProvider = false, // Default value provided
+  isActiveProvider = false,
 }: ProviderSetupActionsProps) {
   const intl = useIntl();
 
-  // If we're showing delete confirmation, render the delete confirmation buttons
   if (showDeleteConfirmation) {
-    // Check if this is the active provider
     if (isActiveProvider) {
       return (
-        <div className="w-full">
-          <div className="w-full px-6 py-4 bg-yellow-600/20 border-t border-yellow-500/30">
-            <p className="text-yellow-500 text-sm mb-2 flex items-start">
-              <AlertTriangle className="h-4 w-4 mr-2 mt-0.5 flex-shrink-0" />
+        <div className="space-y-3">
+          <div className="rounded-lg bg-yellow-600/10 border border-yellow-500/30 p-3">
+            <p className="text-yellow-500 text-sm flex items-start gap-2">
+              <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0" />
               <span>
                 {intl.formatMessage(i18n.cannotDeleteActive, { providerName })}
               </span>
             </p>
           </div>
-          <Button
-            variant="ghost"
-            onClick={onCancelDelete}
-            className="w-full h-[60px] rounded-none hover:bg-background-secondary text-text-secondary hover:text-text-primary text-md font-regular"
-          >
-            {intl.formatMessage(i18n.ok)}
-          </Button>
+          <div className="flex justify-end">
+            <Button variant="outline" onClick={onCancelDelete}>
+              {intl.formatMessage(i18n.ok)}
+            </Button>
+          </div>
         </div>
       );
     }
 
-    // Normal delete confirmation
     return (
-      <div className="w-full">
-        <div className="w-full px-6 py-4 bg-red-900/20 border-t border-red-500/30">
-          <p className="text-red-400 text-sm mb-2">
+      <div className="space-y-3">
+        <div className="rounded-lg bg-red-900/10 border border-red-500/30 p-3">
+          <p className="text-red-400 text-sm">
             {intl.formatMessage(i18n.confirmDeleteMessage, { providerName })}
           </p>
         </div>
-        <Button
-          onClick={onConfirmDelete}
-          className="w-full h-[60px] rounded-none border-b border-border-primary bg-transparent hover:bg-red-900/20 text-red-500 font-medium text-md"
-        >
-          <Trash2 className="h-4 w-4 mr-2" /> {intl.formatMessage(i18n.confirmDelete)}
-        </Button>
-        <Button
-          variant="ghost"
-          onClick={onCancelDelete}
-          className="w-full h-[60px] rounded-none hover:bg-background-secondary text-text-secondary hover:text-text-primary text-md font-regular"
-        >
-          {intl.formatMessage(i18n.cancel)}
-        </Button>
+        <div className="flex justify-end gap-2">
+          <Button variant="outline" onClick={onCancelDelete}>
+            {intl.formatMessage(i18n.cancel)}
+          </Button>
+          <Button variant="destructive" onClick={onConfirmDelete}>
+            <Trash2 className="h-4 w-4 mr-1" />
+            {intl.formatMessage(i18n.confirmDelete)}
+          </Button>
+        </div>
       </div>
     );
   }
 
-  // Regular buttons (with delete if applicable)
+  const submitLabel =
+    primaryParameters && primaryParameters.length > 0
+      ? intl.formatMessage(i18n.submit)
+      : intl.formatMessage(i18n.enableProvider);
+
   return (
-    <div className="w-full">
+    <div className="flex items-center gap-2">
       {canDelete && onDelete && (
-        <Button
-          type="button"
-          onClick={onDelete}
-          className="w-full h-[60px] rounded-none border-t border-border-primary bg-transparent hover:bg-background-secondary text-red-500 font-medium text-md"
-        >
-          <Trash2 className="h-4 w-4 mr-2" /> {intl.formatMessage(i18n.deleteProvider)}
+        <Button variant="destructive" size="sm" onClick={onDelete}>
+          <Trash2 className="h-4 w-4 mr-1" />
+          {intl.formatMessage(i18n.deleteProvider)}
         </Button>
       )}
-      {primaryParameters && primaryParameters.length > 0 ? (
-        <>
-          <Button
-            type="submit"
-            variant="ghost"
-            onClick={onSubmit}
-            className="w-full h-[60px] rounded-none border-t border-border-primary text-md hover:bg-background-secondary text-text-primary font-medium"
-          >
-            {intl.formatMessage(i18n.submit)}
-          </Button>
-          <Button
-            type="button"
-            variant="ghost"
-            onClick={onCancel}
-            className="w-full h-[60px] rounded-none border-t border-border-primary hover:text-text-primary text-text-secondary hover:bg-background-secondary text-md font-regular"
-          >
-            {intl.formatMessage(i18n.cancel)}
-          </Button>
-        </>
-      ) : (
-        <>
-          <Button
-            type="submit"
-            variant="ghost"
-            onClick={onSubmit}
-            className="w-full h-[60px] rounded-none border-t border-border-primary text-md hover:bg-background-secondary text-text-primary font-medium"
-          >
-            {intl.formatMessage(i18n.enableProvider)}
-          </Button>
-          <Button
-            type="button"
-            variant="ghost"
-            onClick={onCancel}
-            className="w-full h-[60px] rounded-none border-t border-border-primary hover:text-text-primary text-text-secondary hover:bg-background-secondary text-md font-regular"
-          >
-            {intl.formatMessage(i18n.cancel)}
-          </Button>
-        </>
-      )}
+      <div className="flex-1" />
+      <Button variant="outline" onClick={onCancel}>
+        {intl.formatMessage(i18n.cancel)}
+      </Button>
+      <Button onClick={onSubmit}>{submitLabel}</Button>
     </div>
   );
 }

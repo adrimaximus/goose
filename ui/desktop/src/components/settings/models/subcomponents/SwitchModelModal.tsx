@@ -17,7 +17,7 @@ import { Select } from '../../../ui/Select';
 import { useConfig } from '../../../ConfigContext';
 import { useModelAndProvider } from '../../../ModelAndProviderContext';
 import type { View } from '../../../../utils/navigationUtils';
-import Model, { getProviderMetadata, fetchModelsForProviders } from '../modelInterface';
+import Model, { getProviderMetadata, fetchModelsForProvidersProgressive, ProviderModelsResult } from '../modelInterface';
 import { getPredefinedModelsFromEnv, shouldShowPredefinedModels } from '../predefinedModelsUtils';
 import { ProviderType } from '../../../../api';
 import { trackModelChanged } from '../../../../utils/analytics';
@@ -490,26 +490,24 @@ export const SwitchModelModal = ({
 
         setLoadingModels(true);
 
-        const results = await fetchModelsForProviders(activeProviders);
-
-        // Process results and build grouped options
         const groupedOptions: {
           options: { value: string; label: string; provider: string; providerType: ProviderType }[];
         }[] = [];
         const errorMap: Record<string, string> = {};
         const warningMap: Record<string, string> = {};
 
-        results.forEach(({ provider: p, models, error, warning }) => {
+        const handleProviderResult = (result: ProviderModelsResult) => {
+          const { provider: p, models, error, warning } = result;
           if (warning) {
             warningMap[p.name] = warning;
           }
           if (error) {
             errorMap[p.name] = error;
+            setProviderErrors({ ...errorMap });
             return;
           }
 
           const modelList = models || [];
-
           const options: {
             value: string;
             label: string;
@@ -533,15 +531,21 @@ export const SwitchModelModal = ({
 
           if (options.length > 0) {
             groupedOptions.push({ options });
+            // Update state incrementally so models appear as each provider responds
+            setModelOptions([...groupedOptions]);
+            setOriginalModelOptions([...groupedOptions]);
           }
-        });
 
-        // Save provider errors and warnings to state
-        setProviderErrors(errorMap);
-        setProviderWarnings(warningMap);
+          if (warning) {
+            setProviderWarnings({ ...warningMap });
+          }
+        };
 
-        setModelOptions(groupedOptions);
-        setOriginalModelOptions(groupedOptions);
+        await fetchModelsForProvidersProgressive(activeProviders, handleProviderResult);
+
+        // Final sync of error/warning maps (catches any stragglers)
+        setProviderErrors({ ...errorMap });
+        setProviderWarnings({ ...warningMap });
       } catch (error: unknown) {
         console.error('Failed to query providers:', error);
       } finally {
@@ -556,19 +560,21 @@ export const SwitchModelModal = ({
 
   useEffect(() => {
     // Don't auto-select if user explicitly cleared the model
-    if (!provider || loadingModels || model || isCustomModel || userClearedModel) return;
+    if (!provider || model || isCustomModel || userClearedModel) return;
 
     const providerModels = modelOptions
       .filter((group) => group.options[0]?.provider === provider)
       .flatMap((group) => group.options);
 
+    // Auto-select as soon as this provider's models are available,
+    // without waiting for all other providers to finish loading.
     if (providerModels.length > 0) {
       const preferredModel = findPreferredModel(providerModels);
       if (preferredModel) {
         setModel(preferredModel);
       }
     }
-  }, [provider, modelOptions, loadingModels, model, isCustomModel, userClearedModel]);
+  }, [provider, modelOptions, model, isCustomModel, userClearedModel]);
 
   // Handle model selection change
   const handleModelChange = (newValue: unknown) => {
@@ -871,27 +877,30 @@ export const SwitchModelModal = ({
                     </div>
                   ) : !isCustomModel ? (
                     <div>
-                      <Select
-                        options={
-                          loadingModels
-                            ? []
-                            : filteredModelOptions.length > 0
-                              ? filteredModelOptions
-                              : []
-                        }
-                        onChange={handleModelChange}
-                        onInputChange={handleInputChange}
-                        value={
-                          loadingModels
-                            ? { value: '', label: intl.formatMessage(i18n.loadingModels), isDisabled: true }
-                            : model
-                              ? { value: model, label: model }
-                              : null
-                        }
-                        placeholder={intl.formatMessage(i18n.selectModelPlaceholder)}
-                        isClearable
-                        isDisabled={loadingModels}
-                      />
+                      {(() => {
+                        // Show loading only if the selected provider hasn't responded yet.
+                        // Once its models are available, show them immediately even if
+                        // other providers are still loading in the background.
+                        const selectedProviderLoaded = filteredModelOptions.length > 0;
+                        const showLoading = loadingModels && !selectedProviderLoaded;
+                        return (
+                          <Select
+                            options={selectedProviderLoaded ? filteredModelOptions : []}
+                            onChange={handleModelChange}
+                            onInputChange={handleInputChange}
+                            value={
+                              showLoading
+                                ? { value: '', label: intl.formatMessage(i18n.loadingModels), isDisabled: true }
+                                : model
+                                  ? { value: model, label: model }
+                                  : null
+                            }
+                            placeholder={intl.formatMessage(i18n.selectModelPlaceholder)}
+                            isClearable
+                            isDisabled={showLoading}
+                          />
+                        );
+                      })()}
 
                       {attemptedSubmit && validationErrors.model && (
                         <div className="text-red-500 text-sm mt-1">{validationErrors.model}</div>

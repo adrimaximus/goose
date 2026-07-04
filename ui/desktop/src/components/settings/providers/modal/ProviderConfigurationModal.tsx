@@ -465,24 +465,20 @@ export default function ProviderConfigurationModal({
 
           <DialogFooter>
             {hasOAuth && !showDeleteConfirmation ? (
-              <div className="flex gap-2 justify-end">
-                <Button variant="outline" onClick={handleCancel}>
-                  {intl.formatMessage(i18n.cancel)}
-                </Button>
+              <div className="flex items-center gap-2">
                 {isConfigured && (
-                  <Button variant="destructive" onClick={handleDelete}>
+                  <Button variant="destructive" size="sm" onClick={handleDelete}>
                     {intl.formatMessage(i18n.removeConfiguration)}
                   </Button>
                 )}
+                <div className="flex-1" />
+                <Button variant="outline" onClick={handleCancel}>
+                  {intl.formatMessage(i18n.cancel)}
+                </Button>
               </div>
             ) : isExternalSetup && !showDeleteConfirmation ? (
-              <div className="w-full">
-                <Button
-                  type="button"
-                  variant="ghost"
-                  onClick={handleCancel}
-                  className="w-full h-[60px] rounded-none border-t border-border-primary text-md hover:bg-background-secondary text-text-primary font-medium"
-                >
+              <div className="flex justify-end">
+                <Button variant="outline" onClick={handleCancel}>
                   {intl.formatMessage(i18n.close)}
                 </Button>
               </div>

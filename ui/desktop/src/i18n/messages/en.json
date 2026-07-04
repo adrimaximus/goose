@@ -3869,6 +3869,9 @@
   "sessionViewComponents.role.user": {
     "defaultMessage": "You"
   },
+  "sessions.action.archive": {
+    "defaultMessage": "Archive session"
+  },
   "sessions.action.delete": {
     "defaultMessage": "Delete session"
   },
@@ -3883,6 +3886,9 @@
   },
   "sessions.action.openNewWindow": {
     "defaultMessage": "Open in new window"
+  },
+  "sessions.action.unarchive": {
+    "defaultMessage": "Unarchive session"
   },
   "sessions.cancel": {
     "defaultMessage": "Cancel"
@@ -3920,6 +3926,15 @@
   "sessions.extensions": {
     "defaultMessage": "Extensions:"
   },
+  "sessions.filter.active": {
+    "defaultMessage": "Active"
+  },
+  "sessions.filter.all": {
+    "defaultMessage": "All"
+  },
+  "sessions.filter.archived": {
+    "defaultMessage": "Archived"
+  },
   "sessions.import": {
     "defaultMessage": "Import Session"
   },
@@ -3941,6 +3956,12 @@
   "sessions.searchPlaceholder": {
     "defaultMessage": "Search history..."
   },
+  "sessions.toast.archiveFailed": {
+    "defaultMessage": "Failed to archive session: {error}"
+  },
+  "sessions.toast.archived": {
+    "defaultMessage": "Session archived successfully"
+  },
   "sessions.toast.deleteFailed": {
     "defaultMessage": "Failed to delete session \"{name}\": {error}"
   },
@@ -3961,6 +3982,12 @@
   },
   "sessions.toast.imported": {
     "defaultMessage": "Session imported successfully"
+  },
+  "sessions.toast.unarchiveFailed": {
+    "defaultMessage": "Failed to unarchive session: {error}"
+  },
+  "sessions.toast.unarchived": {
+    "defaultMessage": "Session unarchived successfully"
   },
   "sessions.toast.updateFailed": {
     "defaultMessage": "Failed to update session description: {error}"
@@ -3986,11 +4013,32 @@
   "sessionsInsights.totalTokens": {
     "defaultMessage": "Total tokens"
   },
+  "sessionsList.archiveSession": {
+    "defaultMessage": "Archive session"
+  },
+  "sessionsList.deleteCancel": {
+    "defaultMessage": "Cancel"
+  },
+  "sessionsList.deleteConfirm": {
+    "defaultMessage": "Delete"
+  },
+  "sessionsList.deleteMessage": {
+    "defaultMessage": "Are you sure you want to delete this session? This action cannot be undone."
+  },
+  "sessionsList.deleteSession": {
+    "defaultMessage": "Delete session"
+  },
+  "sessionsList.deleteTitle": {
+    "defaultMessage": "Delete Session"
+  },
   "sessionsList.showAll": {
     "defaultMessage": "Show All"
   },
   "sessionsList.startNewChat": {
     "defaultMessage": "Start New Chat"
+  },
+  "sessionsList.unarchiveSession": {
+    "defaultMessage": "Unarchive session"
   },
   "sessionsList.untitledSession": {
     "defaultMessage": "Untitled session"

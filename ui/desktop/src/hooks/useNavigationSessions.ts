@@ -49,7 +49,10 @@ export function useNavigationSessions(options: UseNavigationSessionsOptions = {}
     try {
       const response = await listSessions({ throwOnError: false });
       if (response.data) {
-        const sorted = [...response.data.sessions]
+        const allSessions = response.data.sessions.filter(
+          (s) => !s.archived_at,
+        );
+        const sorted = [...allSessions]
           .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
           .slice(0, MAX_RECENT_SESSIONS);
         setRecentSessions(sorted);
@@ -106,7 +109,9 @@ export function useNavigationSessions(options: UseNavigationSessionsOptions = {}
         try {
           const response = await listSessions({ throwOnError: false });
           if (response.data) {
-            const apiSessions = response.data.sessions.slice(0, MAX_RECENT_SESSIONS);
+            const apiSessions = response.data.sessions
+              .filter((s) => !s.archived_at)
+              .slice(0, MAX_RECENT_SESSIONS);
             setRecentSessions((prev) => {
               const emptyLocalSessions = prev.filter(
                 (local) =>
@@ -162,14 +167,33 @@ export function useNavigationSessions(options: UseNavigationSessionsOptions = {}
       );
     };
 
+    const handleSessionUpdated = () => {
+      fetchSessions();
+    };
+
+    const handleSessionArchived = (event: Event) => {
+      const { sessionId } = (event as CustomEvent<{ sessionId: string }>).detail;
+      setRecentSessions((prev) => prev.filter((session) => session.id !== sessionId));
+    };
+
+    const handleSessionUnarchived = () => {
+      fetchSessions();
+    };
+
     window.addEventListener(AppEvents.SESSION_DELETED, handleSessionDeleted);
     window.addEventListener(AppEvents.SESSION_RENAMED, handleSessionRenamed);
+    window.addEventListener(AppEvents.SESSION_UPDATED, handleSessionUpdated);
+    window.addEventListener(AppEvents.SESSION_ARCHIVED, handleSessionArchived);
+    window.addEventListener(AppEvents.SESSION_UNARCHIVED, handleSessionUnarchived);
 
     return () => {
       window.removeEventListener(AppEvents.SESSION_DELETED, handleSessionDeleted);
       window.removeEventListener(AppEvents.SESSION_RENAMED, handleSessionRenamed);
+      window.removeEventListener(AppEvents.SESSION_UPDATED, handleSessionUpdated);
+      window.removeEventListener(AppEvents.SESSION_ARCHIVED, handleSessionArchived);
+      window.removeEventListener(AppEvents.SESSION_UNARCHIVED, handleSessionUnarchived);
     };
-  }, []);
+  }, [fetchSessions]);
 
   const handleNavClick = useCallback(
     (path: string) => {
