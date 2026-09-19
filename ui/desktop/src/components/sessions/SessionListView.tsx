@@ -14,13 +14,10 @@ import {
   LoaderCircle,
   ExternalLink,
   Copy,
-<<<<<<< HEAD
   Puzzle,
   Archive,
   ArchiveRestore,
   LayoutGrid,
-=======
->>>>>>> a0aed81f36076cfe48def4b21c04d7f0d33072e8
 } from 'lucide-react';
 import { Card } from '../ui/card';
 import { Button } from '../ui/button';
@@ -97,7 +94,6 @@ const i18n = defineMessages({
   duplicateSession: { id: 'sessions.action.duplicate', defaultMessage: 'Duplicate session' },
   deleteSession: { id: 'sessions.action.delete', defaultMessage: 'Delete session' },
   exportSession: { id: 'sessions.action.export', defaultMessage: 'Export session' },
-<<<<<<< HEAD
   extensions: { id: 'sessions.extensions', defaultMessage: 'Extensions:' },
   archiveSession: { id: 'sessions.action.archive', defaultMessage: 'Archive session' },
   unarchiveSession: { id: 'sessions.action.unarchive', defaultMessage: 'Unarchive session' },
@@ -108,20 +104,11 @@ const i18n = defineMessages({
   filterAll: { id: 'sessions.filter.all', defaultMessage: 'All' },
   filterActive: { id: 'sessions.filter.active', defaultMessage: 'Active' },
   filterArchived: { id: 'sessions.filter.archived', defaultMessage: 'Archived' },
+  shareNostrSession: { id: 'sessions.action.shareNostr', defaultMessage: 'Share encrypted Nostr link' },
+  shareNostrTitle: { id: 'sessions.shareNostr.title', defaultMessage: 'Encrypted Nostr Share Link' },
+  shareNostrDesc: { id: 'sessions.shareNostr.description', defaultMessage: 'Anyone with this link can fetch and decrypt the session. Treat it like a secret.' },
+  close: { id: 'sessions.close', defaultMessage: 'Close' },
 });
-
-function getSessionExtensionNames(extensionData: ExtensionData): string[] {
-  try {
-    const enabledExtensionData = extensionData?.['enabled_extensions.v0'] as
-      | { extensions?: ExtensionConfig[] }
-      | undefined;
-    if (!enabledExtensionData?.extensions) return [];
-
-    return enabledExtensionData.extensions.map((ext) => formatExtensionName(ext.name));
-  } catch {
-    return [];
-  }
-}
 
 import { archiveSession, unarchiveSession } from '../../api/sdk.gen';
 
@@ -135,14 +122,6 @@ async function unarchiveSessionApi(sessionId: string): Promise<void> {
   await unarchiveSession<true>({ path: { session_id: sessionId }, throwOnError: true });
 }
 
-=======
-  shareNostrSession: { id: 'sessions.action.shareNostr', defaultMessage: 'Share encrypted Nostr link' },
-  shareNostrTitle: { id: 'sessions.shareNostr.title', defaultMessage: 'Encrypted Nostr Share Link' },
-  shareNostrDesc: { id: 'sessions.shareNostr.description', defaultMessage: 'Anyone with this link can fetch and decrypt the session. Treat it like a secret.' },
-  close: { id: 'sessions.close', defaultMessage: 'Close' },
-});
-
->>>>>>> a0aed81f36076cfe48def4b21c04d7f0d33072e8
 interface EditSessionModalProps {
   session: SessionListItem | null;
   isOpen: boolean;
@@ -308,14 +287,18 @@ const SessionListView: React.FC<SessionListViewProps> = React.memo(
     const [sharingSessionId, setSharingSessionId] = useState<string | null>(null);
     const [nostrEnabled, setNostrEnabled] = useState(true);
 
+    // Hide Nostr sharing when explicitly disabled via env var (restricted/enterprise bundles)
+    useEffect(() => {
+      const config = window.electron.getConfig();
+      if (config.GOOSE_DISABLE_NOSTR_SHARING === true) {
+        setNostrEnabled(false);
+      }
+    }, []);
+
     // Search state for debouncing
     const [searchTerm, setSearchTerm] = useState('');
-<<<<<<< HEAD
-    const [caseSensitive, setCaseSensitive] = useState(false);
     type SessionFilter = 'all' | 'active' | 'archived';
     const [activeFilter, setActiveFilter] = useState<SessionFilter>('active');
-=======
->>>>>>> a0aed81f36076cfe48def4b21c04d7f0d33072e8
     const debouncedSearchTerm = useDebounce(searchTerm, 300); // 300ms debounce
     const debouncedSearchTermRef = useRef(debouncedSearchTerm);
     debouncedSearchTermRef.current = debouncedSearchTerm;
@@ -435,33 +418,6 @@ const SessionListView: React.FC<SessionListViewProps> = React.memo(
       };
     }, [loadSessions, debouncedSearchTerm]);
 
-<<<<<<< HEAD
-    const loadSessions = useCallback(async () => {
-      setIsLoading(true);
-      setShowSkeleton(true);
-      setShowContent(false);
-      setError(null);
-      try {
-        const resp = await listSessions<true>({ throwOnError: true });
-        const sessions = resp.data.sessions;
-        setSessions(sessions);
-      } catch (err) {
-        console.error('Failed to load sessions:', err);
-        setError('Failed to load sessions. Please try again later.');
-        setSessions([]);
-        setFilteredSessions([]);
-      } finally {
-        setIsLoading(false);
-=======
-    // Hide Nostr sharing when explicitly disabled via env var (restricted/enterprise bundles)
-    useEffect(() => {
-      const config = window.electron.getConfig();
-      if (config.GOOSE_DISABLE_NOSTR_SHARING === true) {
-        setNostrEnabled(false);
->>>>>>> a0aed81f36076cfe48def4b21c04d7f0d33072e8
-      }
-    }, []);
-
     // Timing logic to prevent flicker between skeleton and content on initial load
     useEffect(() => {
       if (!isLoading && showSkeleton) {
@@ -491,70 +447,10 @@ const SessionListView: React.FC<SessionListViewProps> = React.memo(
       });
     }, [memoizedDateGroups]);
 
-<<<<<<< HEAD
-    // Scroll to the selected session when returning from session history view
-    useEffect(() => {
-      if (selectedSessionId) {
-        const element = sessionRefs.current[selectedSessionId];
-        if (element) {
-          element.scrollIntoView({
-            block: 'center',
-          });
-        }
-      }
-    }, [selectedSessionId, sessions]);
-
-    // Debounced search effect - performs content search via API and respects archive filter
-    useEffect(() => {
-      if (!debouncedSearchTerm) {
-        // Apply archive filter when no search
-        if (activeFilter === 'all') {
-          startTransition(() => setFilteredSessions(sessions));
-        } else if (activeFilter === 'archived') {
-          startTransition(() => setFilteredSessions(sessions.filter((s) => (s as SessionWithArchive).archived_at != null)));
-        } else {
-          startTransition(() => setFilteredSessions(sessions.filter((s) => (s as SessionWithArchive).archived_at == null)));
-        }
-        setSearchResults(null);
-        return;
-      }
-
-      // Call the backend search API for content search
-      const performSearch = async () => {
-        const resp = await searchSessions({
-          query: { query: debouncedSearchTerm },
-        });
-
-        if (resp.data) {
-          // Response is Vec<Session> - sessions that match the search
-          const matchedSessionIds = new Set(resp.data.map((s: { id: string }) => s.id));
-          let filtered = sessions.filter((session) => matchedSessionIds.has(session.id));
-
-          // Apply archive filter on top of search results
-          if (activeFilter === 'archived') {
-            filtered = filtered.filter((s) => (s as SessionWithArchive).archived_at != null);
-          } else if (activeFilter === 'active') {
-            filtered = filtered.filter((s) => (s as SessionWithArchive).archived_at == null);
-          }
-
-          startTransition(() => {
-            setFilteredSessions(filtered);
-            setSearchResults(
-              filtered.length > 0 ? { count: filtered.length, currentIndex: 1 } : null
-            );
-          });
-        }
-      };
-
-      performSearch();
-    }, [debouncedSearchTerm, caseSensitive, sessions, activeFilter]);
-
+    // NOTE: list filtering is handled server-side by acpListSessions(keyword);
+    // the local keyword-based client filter was removed with the ACP migration.
     // Handle immediate search input (updates search term for debouncing)
-    const handleSearch = useCallback((term: string, caseSensitive: boolean) => {
-=======
-    // Handle immediate search input (updates search term for debouncing).
     const handleSearch = useCallback((term: string) => {
->>>>>>> a0aed81f36076cfe48def4b21c04d7f0d33072e8
       setSearchTerm(term);
     }, []);
 
@@ -785,7 +681,6 @@ const SessionListView: React.FC<SessionListViewProps> = React.memo(
       onExportClick,
       onShareClick,
       onOpenInNewWindow,
-<<<<<<< HEAD
       onArchiveClick,
       onUnarchiveClick,
     }: {
@@ -797,18 +692,6 @@ const SessionListView: React.FC<SessionListViewProps> = React.memo(
       onOpenInNewWindow: (session: Session, e: React.MouseEvent) => void;
       onArchiveClick: (session: Session) => void;
       onUnarchiveClick: (session: Session) => void;
-=======
-      isSharing,
-    }: {
-      session: SessionListItem;
-      onEditClick: (session: SessionListItem) => void;
-      onDuplicateClick: (session: SessionListItem) => void;
-      onDeleteClick: (session: SessionListItem) => void;
-      onExportClick: (session: SessionListItem, e: React.MouseEvent) => void;
-      onShareClick: (session: SessionListItem, e: React.MouseEvent) => void;
-      onOpenInNewWindow: (session: SessionListItem, e: React.MouseEvent) => void;
-      isSharing: boolean;
->>>>>>> a0aed81f36076cfe48def4b21c04d7f0d33072e8
     }) {
       const handleEditClick = useCallback(
         (e: React.MouseEvent) => {
@@ -859,7 +742,6 @@ const SessionListView: React.FC<SessionListViewProps> = React.memo(
         [onOpenInNewWindow, session]
       );
 
-<<<<<<< HEAD
       const handleArchiveClick = useCallback(
         (e: React.MouseEvent) => {
           e.stopPropagation();
@@ -884,19 +766,12 @@ const SessionListView: React.FC<SessionListViewProps> = React.memo(
         () => getSessionExtensionNames(session.extension_data),
         [session.extension_data]
       );
-=======
-      const displayName = session.name;
->>>>>>> a0aed81f36076cfe48def4b21c04d7f0d33072e8
 
       return (
         <Card
           onClick={handleCardClick}
-<<<<<<< HEAD
           className={`h-full py-3 px-4 hover:shadow-default cursor-pointer transition-all duration-150 flex flex-col justify-between relative group ${sessionWithArchive.archived_at ? 'opacity-60' : ''}`}
           ref={(el) => setSessionRefs(session.id, el)}
-=======
-          className="h-full py-3 px-4 hover:shadow-default cursor-pointer transition-all duration-150 flex flex-col justify-between relative group"
->>>>>>> a0aed81f36076cfe48def4b21c04d7f0d33072e8
         >
           <div>
             <h3 className="text-base break-words line-clamp-2 w-full mb-1">{displayName}</h3>
@@ -1083,12 +958,8 @@ const SessionListView: React.FC<SessionListViewProps> = React.memo(
                     onExportClick={handleExportSession}
                     onShareClick={handleShareSessionNostr}
                     onOpenInNewWindow={handleOpenInNewWindow}
-<<<<<<< HEAD
                     onArchiveClick={handleArchiveSession}
                     onUnarchiveClick={handleUnarchiveSession}
-=======
-                    isSharing={sharingSessionId === session.id}
->>>>>>> a0aed81f36076cfe48def4b21c04d7f0d33072e8
                   />
                 ))}
               </div>
