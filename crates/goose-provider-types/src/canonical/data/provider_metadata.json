@@ -8,7 +8,7 @@
     "env": [
       "302AI_API_KEY"
     ],
-    "model_count": 97
+    "model_count": 117
   },
   {
     "id": "abacus",
@@ -19,7 +19,7 @@
     "env": [
       "ABACUS_API_KEY"
     ],
-    "model_count": 65
+    "model_count": 108
   },
   {
     "id": "abliteration-ai",
@@ -30,7 +30,106 @@
     "env": [
       "ABLIT_KEY"
     ],
+    "model_count": 3
+  },
+  {
+    "id": "above",
+    "display_name": "above.dev",
+    "npm": "@ai-sdk/openai-compatible",
+    "api": "https://api.above.dev/v1",
+    "doc": "https://above.dev/docs",
+    "env": [
+      "ABOVE_API_KEY"
+    ],
+    "model_count": 10
+  },
+  {
+    "id": "agentrouter",
+    "display_name": "AgentRouter",
+    "npm": "@ai-sdk/openai-compatible",
+    "api": "https://agentrouter.org/v1",
+    "doc": "https://agentrouter.org/docs/opencode.html",
+    "env": [
+      "AGENTROUTER_API_KEY"
+    ],
+    "model_count": 5
+  },
+  {
+    "id": "agnes",
+    "display_name": "Agnes AI",
+    "npm": "@ai-sdk/openai-compatible",
+    "api": "https://apihub.agnes-ai.com/v1",
+    "doc": "https://agnes-ai.com/doc",
+    "env": [
+      "AGNES_API_KEY"
+    ],
+    "model_count": 3
+  },
+  {
+    "id": "ai-router",
+    "display_name": "AI-ROUTER",
+    "npm": "@ai-sdk/openai-compatible",
+    "api": "https://api.ai-router.dev/v1",
+    "doc": "https://ai-router.dev/openai-compatible-api-gateway/",
+    "env": [
+      "AI_ROUTER_API_KEY"
+    ],
+    "model_count": 5
+  },
+  {
+    "id": "ai21",
+    "display_name": "AI21 Labs",
+    "npm": "@ai-sdk/openai-compatible",
+    "api": "https://api.ai21.com/studio/v1",
+    "doc": "https://docs.ai21.com/docs/jamba-foundation-models",
+    "env": [
+      "AI21_API_KEY"
+    ],
+    "model_count": 2
+  },
+  {
+    "id": "aiand",
+    "display_name": "ai&",
+    "npm": "@ai-sdk/openai-compatible",
+    "api": "https://api.aiand.com/v1",
+    "doc": "https://docs.aiand.com/",
+    "env": [
+      "AIAND_API_KEY"
+    ],
+    "model_count": 11
+  },
+  {
+    "id": "ainetcafe",
+    "display_name": "ainetcafe",
+    "npm": "@ai-sdk/openai-compatible",
+    "api": "https://microquickjs.com/v1",
+    "doc": "https://ainetcafe.com/k3/guides/",
+    "env": [
+      "AINETCAFE_API_KEY"
+    ],
     "model_count": 1
+  },
+  {
+    "id": "aixy",
+    "display_name": "Aixy",
+    "npm": "@ai-sdk/openai-compatible",
+    "api": "https://api.aixy-gateway.com/v1",
+    "doc": "https://docs.aixy-gateway.com/integrations/overview",
+    "env": [
+      "AIXY_API_KEY"
+    ],
+    "model_count": 1
+  },
+  {
+    "id": "aki-io",
+    "display_name": "AKI.IO",
+    "npm": "@ai-sdk/openai-compatible",
+    "api": "https://aki.io/v1",
+    "doc": "https://aki.io/docs/",
+    "env": [
+      "AKI_IO_API_KEY"
+    ],
+    "model_count": 7
   },
   {
     "id": "alibaba",
@@ -41,7 +140,7 @@
     "env": [
       "DASHSCOPE_API_KEY"
     ],
-    "model_count": 51
+    "model_count": 56
   },
   {
     "id": "alibaba-cn",
@@ -52,7 +151,7 @@
     "env": [
       "DASHSCOPE_API_KEY"
     ],
-    "model_count": 83
+    "model_count": 90
   },
   {
     "id": "alibaba-coding-plan",
@@ -85,7 +184,7 @@
     "env": [
       "ALIBABA_TOKEN_PLAN_API_KEY"
     ],
-    "model_count": 18
+    "model_count": 28
   },
   {
     "id": "alibaba-token-plan-cn",
@@ -96,7 +195,7 @@
     "env": [
       "ALIBABA_TOKEN_PLAN_API_KEY"
     ],
-    "model_count": 18
+    "model_count": 28
   },
   {
     "id": "ambient",
@@ -107,7 +206,18 @@
     "env": [
       "AMBIENT_API_KEY"
     ],
-    "model_count": 3
+    "model_count": 10
+  },
+  {
+    "id": "amd",
+    "display_name": "AMD",
+    "npm": "@ai-sdk/openai-compatible",
+    "api": "https://developer.amd.com.cn/radeon/api/v1",
+    "doc": "https://developer.amd.com.cn/radeon/tokenfactory",
+    "env": [
+      "AMD_API_KEY"
+    ],
+    "model_count": 6
   },
   {
     "id": "anyapi",
@@ -119,6 +229,17 @@
       "ANYAPI_API_KEY"
     ],
     "model_count": 30
+  },
+  {
+    "id": "arcee",
+    "display_name": "Arcee",
+    "npm": "@ai-sdk/openai-compatible",
+    "api": "https://api.arcee.ai/api/v1",
+    "doc": "https://docs.arcee.ai",
+    "env": [
+      "ARCEE_API_KEY"
+    ],
+    "model_count": 7
   },
   {
     "id": "atomic-chat",
@@ -162,7 +283,7 @@
     "env": [
       "BASETEN_API_KEY"
     ],
-    "model_count": 13
+    "model_count": 23
   },
   {
     "id": "berget",
@@ -172,6 +293,28 @@
     "doc": "https://api.berget.ai",
     "env": [
       "BERGET_API_KEY"
+    ],
+    "model_count": 6
+  },
+  {
+    "id": "blueclaw",
+    "display_name": "Blue Claw",
+    "npm": "@ai-sdk/openai-compatible",
+    "api": "https://openai.blueclaw.network/v1",
+    "doc": "https://blueclaw.network",
+    "env": [
+      "BLUECLAW_API_KEY"
+    ],
+    "model_count": 2
+  },
+  {
+    "id": "bothub",
+    "display_name": "Bothub",
+    "npm": "@ai-sdk/openai-compatible",
+    "api": "https://openai.bothub.ru/v1",
+    "doc": "https://bothub.ru/models",
+    "env": [
+      "BOTHUB_API_KEY"
     ],
     "model_count": 8
   },
@@ -184,7 +327,7 @@
     "env": [
       "CHUTES_API_KEY"
     ],
-    "model_count": 13
+    "model_count": 14
   },
   {
     "id": "clarifai",
@@ -209,6 +352,17 @@
     "model_count": 2
   },
   {
+    "id": "cline-pass",
+    "display_name": "ClinePass",
+    "npm": "@ai-sdk/openai-compatible",
+    "api": "https://api.cline.bot/api/v1",
+    "doc": "https://docs.cline.bot/getting-started/clinepass",
+    "env": [
+      "CLINE_API_KEY"
+    ],
+    "model_count": 18
+  },
+  {
     "id": "cloudferro-sherlock",
     "display_name": "CloudFerro Sherlock",
     "npm": "@ai-sdk/openai-compatible",
@@ -229,7 +383,18 @@
       "CLOUDFLARE_ACCOUNT_ID",
       "CLOUDFLARE_API_KEY"
     ],
-    "model_count": 22
+    "model_count": 27
+  },
+  {
+    "id": "coralbricks",
+    "display_name": "CoralBricks",
+    "npm": "@ai-sdk/openai-compatible",
+    "api": "https://inference.coralbricks.ai/v1",
+    "doc": "https://www.coralbricks.ai/docs",
+    "env": [
+      "CORAL_API_KEY"
+    ],
+    "model_count": 4
   },
   {
     "id": "cortecs",
@@ -240,7 +405,7 @@
     "env": [
       "CORTECS_API_KEY"
     ],
-    "model_count": 56
+    "model_count": 109
   },
   {
     "id": "crof",
@@ -251,7 +416,40 @@
     "env": [
       "CROF_API_KEY"
     ],
-    "model_count": 23
+    "model_count": 24
+  },
+  {
+    "id": "crossmodel",
+    "display_name": "CrossModel",
+    "npm": "@ai-sdk/openai-compatible",
+    "api": "https://api.crossmodel.ai/v1",
+    "doc": "https://www.crossmodel.ai/docs",
+    "env": [
+      "CROSSMODEL_API_KEY"
+    ],
+    "model_count": 66
+  },
+  {
+    "id": "crusoe",
+    "display_name": "Crusoe",
+    "npm": "@ai-sdk/openai-compatible",
+    "api": "https://api.inference.crusoecloud.com/v1",
+    "doc": "https://docs.crusoecloud.com/managed-inference/overview",
+    "env": [
+      "CRUSOE_API_KEY"
+    ],
+    "model_count": 11
+  },
+  {
+    "id": "daoxe",
+    "display_name": "DaoXE",
+    "npm": "@ai-sdk/openai-compatible",
+    "api": "https://daoxe.com/v1",
+    "doc": "https://daoxe.com/pricing",
+    "env": [
+      "DAOXE_API_KEY"
+    ],
+    "model_count": 9
   },
   {
     "id": "databricks",
@@ -263,7 +461,7 @@
       "DATABRICKS_HOST",
       "DATABRICKS_TOKEN"
     ],
-    "model_count": 25
+    "model_count": 30
   },
   {
     "id": "deepseek",
@@ -285,7 +483,7 @@
     "env": [
       "DIGITALOCEAN_ACCESS_TOKEN"
     ],
-    "model_count": 80
+    "model_count": 100
   },
   {
     "id": "dinference",
@@ -296,7 +494,7 @@
     "env": [
       "DINFERENCE_API_KEY"
     ],
-    "model_count": 5
+    "model_count": 6
   },
   {
     "id": "drun",
@@ -310,6 +508,50 @@
     "model_count": 3
   },
   {
+    "id": "ebcloud",
+    "display_name": "EBCloud",
+    "npm": "@ai-sdk/openai-compatible",
+    "api": "https://maas-api.ebcloud.com/v1",
+    "doc": "https://docs.ebtech.com/ai/model-api.html",
+    "env": [
+      "EBCLOUD_API_KEY"
+    ],
+    "model_count": 4
+  },
+  {
+    "id": "echo",
+    "display_name": "Echo",
+    "npm": "@ai-sdk/openai-compatible",
+    "api": "https://echo.tracerml.ai/v1",
+    "doc": "https://echo.tracerml.ai/docs/api",
+    "env": [
+      "ECHO_API_KEY"
+    ],
+    "model_count": 1
+  },
+  {
+    "id": "edenai",
+    "display_name": "Eden AI",
+    "npm": "@ai-sdk/openai-compatible",
+    "api": "https://api.edenai.run/v3",
+    "doc": "https://docs.edenai.co",
+    "env": [
+      "EDENAI_API_KEY"
+    ],
+    "model_count": 287
+  },
+  {
+    "id": "empiriolabs",
+    "display_name": "EmpirioLabs AI",
+    "npm": "@ai-sdk/openai-compatible",
+    "api": "https://api.empiriolabs.ai/v1",
+    "doc": "https://docs.empiriolabs.ai",
+    "env": [
+      "EMPIRIOLABS_API_KEY"
+    ],
+    "model_count": 66
+  },
+  {
     "id": "evroc",
     "display_name": "evroc",
     "npm": "@ai-sdk/openai-compatible",
@@ -318,7 +560,7 @@
     "env": [
       "EVROC_API_KEY"
     ],
-    "model_count": 15
+    "model_count": 16
   },
   {
     "id": "fastrouter",
@@ -340,7 +582,7 @@
     "env": [
       "FIREWORKS_API_KEY"
     ],
-    "model_count": 16
+    "model_count": 22
   },
   {
     "id": "freemodel",
@@ -384,18 +626,7 @@
     "env": [
       "GITHUB_TOKEN"
     ],
-    "model_count": 23
-  },
-  {
-    "id": "github-models",
-    "display_name": "GitHub Models",
-    "npm": "@ai-sdk/openai-compatible",
-    "api": "https://models.github.ai/inference",
-    "doc": "https://docs.github.com/en/github-models",
-    "env": [
-      "GITHUB_TOKEN"
-    ],
-    "model_count": 55
+    "model_count": 32
   },
   {
     "id": "gmicloud",
@@ -406,7 +637,18 @@
     "env": [
       "GMICLOUD_API_KEY"
     ],
-    "model_count": 13
+    "model_count": 15
+  },
+  {
+    "id": "greenpt",
+    "display_name": "GreenPT",
+    "npm": "@ai-sdk/openai-compatible",
+    "api": "https://api.greenpt.ai/v1",
+    "doc": "https://docs.greenpt.ai",
+    "env": [
+      "GREENPT_API_KEY"
+    ],
+    "model_count": 40
   },
   {
     "id": "helicone",
@@ -420,6 +662,17 @@
     "model_count": 90
   },
   {
+    "id": "hetzner",
+    "display_name": "Hetzner",
+    "npm": "@ai-sdk/openai-compatible",
+    "api": "https://inference.hetzner.com/api/v1",
+    "doc": "https://experiments.hetzner.com/docs/inference",
+    "env": [
+      "HETZNER_API_KEY"
+    ],
+    "model_count": 2
+  },
+  {
     "id": "hpc-ai",
     "display_name": "HPC-AI",
     "npm": "@ai-sdk/openai-compatible",
@@ -428,7 +681,7 @@
     "env": [
       "HPC_AI_API_KEY"
     ],
-    "model_count": 3
+    "model_count": 9
   },
   {
     "id": "huggingface",
@@ -439,7 +692,18 @@
     "env": [
       "HF_TOKEN"
     ],
-    "model_count": 50
+    "model_count": 78
+  },
+  {
+    "id": "hyper",
+    "display_name": "Charm Hyper",
+    "npm": "@ai-sdk/openai-compatible",
+    "api": "https://hyper.charm.land/v1",
+    "doc": "https://hyper.charm.land",
+    "env": [
+      "HYPER_API_KEY"
+    ],
+    "model_count": 23
   },
   {
     "id": "iflowcn",
@@ -453,15 +717,26 @@
     "model_count": 14
   },
   {
+    "id": "impossibl",
+    "display_name": "Impossibl",
+    "npm": "@ai-sdk/openai-compatible",
+    "api": "https://api.impossibl.com/v1",
+    "doc": "https://impossibl.com/docs/models",
+    "env": [
+      "IMPOSSIBL_API_KEY"
+    ],
+    "model_count": 76
+  },
+  {
     "id": "inception",
     "display_name": "Inception",
     "npm": "@ai-sdk/openai-compatible",
     "api": "https://api.inceptionlabs.ai/v1/",
-    "doc": "https://platform.inceptionlabs.ai/docs",
+    "doc": "https://docs.inceptionlabs.ai/get-started/models",
     "env": [
       "INCEPTION_API_KEY"
     ],
-    "model_count": 2
+    "model_count": 3
   },
   {
     "id": "inceptron",
@@ -472,7 +747,29 @@
     "env": [
       "INCEPTRON_API_KEY"
     ],
-    "model_count": 6
+    "model_count": 4
+  },
+  {
+    "id": "inco",
+    "display_name": "Inco",
+    "npm": "@ai-sdk/openai-compatible",
+    "api": "https://api.inco.ai/v1",
+    "doc": "https://platform.inco.ai/docs",
+    "env": [
+      "INCO_API_KEY"
+    ],
+    "model_count": 7
+  },
+  {
+    "id": "infer",
+    "display_name": "Infer by Flow7",
+    "npm": "@ai-sdk/openai",
+    "api": "https://infer.flow7.org/v1",
+    "doc": "https://infer.flow7.org/opencode",
+    "env": [
+      "INFER_API_KEY"
+    ],
+    "model_count": 2
   },
   {
     "id": "inference",
@@ -486,6 +783,29 @@
     "model_count": 9
   },
   {
+    "id": "inferx",
+    "display_name": "InferX",
+    "npm": "@ai-sdk/openai-compatible",
+    "api": "https://model.inferx.net/endpoints/v1",
+    "doc": "https://model.inferx.net/endpoints",
+    "env": [
+      "INFERX_API_KEY"
+    ],
+    "model_count": 12
+  },
+  {
+    "id": "infomaniak",
+    "display_name": "Infomaniak",
+    "npm": "@ai-sdk/openai-compatible",
+    "api": "https://api.infomaniak.com/2/ai/${INFOMANIAK_PRODUCT_ID}/openai/v1",
+    "doc": "https://www.infomaniak.com/en/hosting/ai-services/open-source-models",
+    "env": [
+      "INFOMANIAK_API_KEY",
+      "INFOMANIAK_PRODUCT_ID"
+    ],
+    "model_count": 10
+  },
+  {
     "id": "io-net",
     "display_name": "IO.NET",
     "npm": "@ai-sdk/openai-compatible",
@@ -493,6 +813,28 @@
     "doc": "https://io.net/docs/guides/intelligence/io-intelligence",
     "env": [
       "IOINTELLIGENCE_API_KEY"
+    ],
+    "model_count": 17
+  },
+  {
+    "id": "iteracompute",
+    "display_name": "IteraCompute",
+    "npm": "@ai-sdk/openai-compatible",
+    "api": "https://api.iteracompute.com/v1",
+    "doc": "https://iteracompute.com/docs.html",
+    "env": [
+      "ITERACOMPUTE_API_KEY"
+    ],
+    "model_count": 9
+  },
+  {
+    "id": "jalapeno",
+    "display_name": "Jalapeno Cloud",
+    "npm": "@ai-sdk/openai-compatible",
+    "api": "https://api.jalapeno-cloud.ai/v1",
+    "doc": "https://www.jalapeno-cloud.ai/docs/",
+    "env": [
+      "JALAPENO_API_KEY"
     ],
     "model_count": 17
   },
@@ -508,6 +850,17 @@
     "model_count": 61
   },
   {
+    "id": "kenari",
+    "display_name": "Kenari",
+    "npm": "@ai-sdk/openai-compatible",
+    "api": "https://kenari.id/v1",
+    "doc": "https://kenari.id/docs",
+    "env": [
+      "KENARI_API_KEY"
+    ],
+    "model_count": 60
+  },
+  {
     "id": "kilo",
     "display_name": "Kilo Gateway",
     "npm": "@ai-sdk/openai-compatible",
@@ -516,18 +869,51 @@
     "env": [
       "KILO_API_KEY"
     ],
-    "model_count": 345
+    "model_count": 391
   },
   {
-    "id": "kimi-for-coding",
-    "display_name": "Kimi For Coding",
-    "npm": "@ai-sdk/anthropic",
+    "id": "kimi-code-plan-cn",
+    "display_name": "Kimi For Coding (kimi.com)",
+    "npm": "@ai-sdk/openai-compatible",
     "api": "https://api.kimi.com/coding/v1",
-    "doc": "https://www.kimi.com/code/docs/en/third-party-tools/other-coding-agents.html",
+    "doc": "https://www.kimi.com/code/docs/en/kimi-code/models.html",
     "env": [
       "KIMI_API_KEY"
     ],
     "model_count": 4
+  },
+  {
+    "id": "kimi-code-plan-global",
+    "display_name": "Kimi For Coding (kimi.ai)",
+    "npm": "@ai-sdk/openai-compatible",
+    "api": "https://api.kimi.ai/coding/v1",
+    "doc": "https://www.kimi.ai/code/docs/en/kimi-code/models.html",
+    "env": [
+      "KIMI_API_KEY"
+    ],
+    "model_count": 4
+  },
+  {
+    "id": "klokintegration",
+    "display_name": "klokintegration.se",
+    "npm": "@ai-sdk/openai-compatible",
+    "api": "https://api-gw.klok.ipaas.se/proxy/kloker-key/v1",
+    "doc": "https://klokintegration.se/docs/ai-api",
+    "env": [
+      "KLOKINTEGRATION_API_KEY"
+    ],
+    "model_count": 3
+  },
+  {
+    "id": "kosmik",
+    "display_name": "Kosmik Compute",
+    "npm": "@ai-sdk/openai-compatible",
+    "api": "https://api.koscompute.com/v1",
+    "doc": "https://api.koscompute.com/docs/",
+    "env": [
+      "KOSMIK_API_KEY"
+    ],
+    "model_count": 1
   },
   {
     "id": "kuae-cloud-coding-plan",
@@ -553,6 +939,17 @@
   },
   {
     "id": "llmgateway",
+    "display_name": "DevPass (LLM Gateway)",
+    "npm": "@ai-sdk/openai-compatible",
+    "api": "https://api.llmgateway.io/v1",
+    "doc": "https://llmgateway.io/docs",
+    "env": [
+      "LLMGATEWAY_API_KEY"
+    ],
+    "model_count": 205
+  },
+  {
+    "id": "llmgateway-providers",
     "display_name": "LLM Gateway",
     "npm": "@ai-sdk/openai-compatible",
     "api": "https://api.llmgateway.io/v1",
@@ -560,7 +957,18 @@
     "env": [
       "LLMGATEWAY_API_KEY"
     ],
-    "model_count": 182
+    "model_count": 428
+  },
+  {
+    "id": "llmtech",
+    "display_name": "LLM Tech",
+    "npm": "@ai-sdk/openai-compatible",
+    "api": "https://api.llmtech.eu/v1",
+    "doc": "https://llmtech.eu/models/qwen3.8-27b",
+    "env": [
+      "LLMTECH_API_KEY"
+    ],
+    "model_count": 1
   },
   {
     "id": "llmtr",
@@ -571,7 +979,7 @@
     "env": [
       "LLMTR_API_KEY"
     ],
-    "model_count": 6
+    "model_count": 32
   },
   {
     "id": "lmstudio",
@@ -585,6 +993,17 @@
     "model_count": 3
   },
   {
+    "id": "longcat",
+    "display_name": "LongCat",
+    "npm": "@ai-sdk/openai-compatible",
+    "api": "https://api.longcat.chat/openai",
+    "doc": "https://longcat.chat/platform/docs/",
+    "env": [
+      "LONGCAT_API_KEY"
+    ],
+    "model_count": 1
+  },
+  {
     "id": "lucidquery",
     "display_name": "LucidQuery",
     "npm": "@ai-sdk/openai-compatible",
@@ -596,6 +1015,17 @@
     "model_count": 4
   },
   {
+    "id": "lynkr",
+    "display_name": "Lynkr",
+    "npm": "@ai-sdk/openai-compatible",
+    "api": "http://127.0.0.1:8081/v1",
+    "doc": "https://github.com/Fast-Editor/Lynkr",
+    "env": [
+      "LYNKR_API_KEY"
+    ],
+    "model_count": 1
+  },
+  {
     "id": "meganova",
     "display_name": "Meganova",
     "npm": "@ai-sdk/openai-compatible",
@@ -605,6 +1035,28 @@
       "MEGANOVA_API_KEY"
     ],
     "model_count": 19
+  },
+  {
+    "id": "melious",
+    "display_name": "Melious",
+    "npm": "@ai-sdk/openai-compatible",
+    "api": "https://api.melious.ai/v1",
+    "doc": "https://melious.ai/docs/reference/models",
+    "env": [
+      "MELIOUS_API_KEY"
+    ],
+    "model_count": 12
+  },
+  {
+    "id": "meta",
+    "display_name": "Meta",
+    "npm": "@ai-sdk/openai",
+    "api": "https://api.meta.ai/v1",
+    "doc": "https://dev.meta.ai/docs",
+    "env": [
+      "META_MODEL_API_KEY"
+    ],
+    "model_count": 5
   },
   {
     "id": "meta-llama",
@@ -630,9 +1082,9 @@
   },
   {
     "id": "minimax-cn",
-    "display_name": "MiniMax (minimaxi.com)",
+    "display_name": "MiniMax (minimax.cn)",
     "npm": "@ai-sdk/anthropic",
-    "api": "https://api.minimaxi.com/anthropic/v1",
+    "api": "https://api.minimax.cn/anthropic/v1",
     "doc": "https://platform.minimaxi.com/docs/guides/quickstart",
     "env": [
       "MINIMAX_API_KEY"
@@ -641,9 +1093,9 @@
   },
   {
     "id": "minimax-cn-coding-plan",
-    "display_name": "MiniMax Token Plan (minimaxi.com)",
+    "display_name": "MiniMax Token Plan (minimax.cn)",
     "npm": "@ai-sdk/anthropic",
-    "api": "https://api.minimaxi.com/anthropic/v1",
+    "api": "https://api.minimax.cn/anthropic/v1",
     "doc": "https://platform.minimaxi.com/docs/token-plan/intro",
     "env": [
       "MINIMAX_API_KEY"
@@ -684,6 +1136,39 @@
     "model_count": 2
   },
   {
+    "id": "modal",
+    "display_name": "Modal",
+    "npm": "@ai-sdk/openai-compatible",
+    "api": "https://inference.us-west.modal.direct/v1",
+    "doc": "https://modal.com/docs/guide/endpoints",
+    "env": [
+      "MODAL_PROXY_TOKEN"
+    ],
+    "model_count": 4
+  },
+  {
+    "id": "model-oracle-ai",
+    "display_name": "Model Oracle AI",
+    "npm": "@ai-sdk/openai-compatible",
+    "api": "https://api.modeloracle.com/api/v1",
+    "doc": "https://modeloracle.com/setup/",
+    "env": [
+      "MODEL_ORACLE_API_KEY"
+    ],
+    "model_count": 15
+  },
+  {
+    "id": "modelis",
+    "display_name": "Modelis",
+    "npm": "@ai-sdk/openai-compatible",
+    "api": "https://modelishub.com/v1",
+    "doc": "https://modelishub.com/pricing",
+    "env": [
+      "MODELIS_API_KEY"
+    ],
+    "model_count": 9
+  },
+  {
     "id": "modelscope",
     "display_name": "ModelScope",
     "npm": "@ai-sdk/openai-compatible",
@@ -703,7 +1188,7 @@
     "env": [
       "MOONSHOT_API_KEY"
     ],
-    "model_count": 9
+    "model_count": 4
   },
   {
     "id": "moonshotai-cn",
@@ -714,7 +1199,7 @@
     "env": [
       "MOONSHOT_API_KEY"
     ],
-    "model_count": 9
+    "model_count": 4
   },
   {
     "id": "morph",
@@ -728,6 +1213,17 @@
     "model_count": 3
   },
   {
+    "id": "nan",
+    "display_name": "NaN",
+    "npm": "@ai-sdk/openai-compatible",
+    "api": "https://api.nan.builders/v1",
+    "doc": "https://nan.builders/docs/models",
+    "env": [
+      "NAN_API_KEY"
+    ],
+    "model_count": 7
+  },
+  {
     "id": "nano-gpt",
     "display_name": "NanoGPT",
     "npm": "@ai-sdk/openai-compatible",
@@ -736,7 +1232,7 @@
     "env": [
       "NANO_GPT_API_KEY"
     ],
-    "model_count": 617
+    "model_count": 597
   },
   {
     "id": "nearai",
@@ -747,7 +1243,7 @@
     "env": [
       "NEARAI_API_KEY"
     ],
-    "model_count": 37
+    "model_count": 32
   },
   {
     "id": "nebius",
@@ -758,19 +1254,30 @@
     "env": [
       "NEBIUS_API_KEY"
     ],
-    "model_count": 30
+    "model_count": 20
   },
   {
     "id": "neon",
     "display_name": "Neon",
     "npm": "@ai-sdk/openai-compatible",
-    "api": "${NEON_AI_GATEWAY_BASE_URL}/ai-gateway/mlflow/v1",
+    "api": "${NEON_AI_GATEWAY_BASE_URL}/v1",
     "doc": "https://neon.com/docs",
     "env": [
       "NEON_AI_GATEWAY_BASE_URL",
       "NEON_AI_GATEWAY_TOKEN"
     ],
-    "model_count": 25
+    "model_count": 46
+  },
+  {
+    "id": "neosmith",
+    "display_name": "NeoSmith",
+    "npm": "@ai-sdk/openai",
+    "api": "https://router.neosmith.ai/v1",
+    "doc": "https://neosmith.ai/docs",
+    "env": [
+      "NEOSMITH_API_KEY"
+    ],
+    "model_count": 4
   },
   {
     "id": "neuralwatt",
@@ -781,7 +1288,7 @@
     "env": [
       "NEURALWATT_API_KEY"
     ],
-    "model_count": 18
+    "model_count": 29
   },
   {
     "id": "nova",
@@ -803,7 +1310,7 @@
     "env": [
       "NOVITA_API_KEY"
     ],
-    "model_count": 105
+    "model_count": 107
   },
   {
     "id": "nvidia",
@@ -814,7 +1321,29 @@
     "env": [
       "NVIDIA_API_KEY"
     ],
-    "model_count": 84
+    "model_count": 105
+  },
+  {
+    "id": "oci",
+    "display_name": "OCI Generative AI",
+    "npm": "@ai-sdk/openai-compatible",
+    "api": "https://inference.generativeai.us-chicago-1.oci.oraclecloud.com/openai/v1",
+    "doc": "https://docs.oracle.com/en-us/iaas/Content/generative-ai/pretrained-models.htm",
+    "env": [
+      "OCI_GENAI_API_KEY"
+    ],
+    "model_count": 9
+  },
+  {
+    "id": "ofox",
+    "display_name": "Ofox",
+    "npm": "@ai-sdk/openai-compatible",
+    "api": "https://api.ofox.ai/v1",
+    "doc": "https://ofox.ai/docs",
+    "env": [
+      "OFOX_API_KEY"
+    ],
+    "model_count": 148
   },
   {
     "id": "ollama-cloud",
@@ -825,7 +1354,7 @@
     "env": [
       "OLLAMA_API_KEY"
     ],
-    "model_count": 43
+    "model_count": 24
   },
   {
     "id": "opencode",
@@ -836,18 +1365,40 @@
     "env": [
       "OPENCODE_API_KEY"
     ],
-    "model_count": 74
+    "model_count": 112
   },
   {
     "id": "opencode-go",
     "display_name": "OpenCode Go",
     "npm": "@ai-sdk/openai-compatible",
     "api": "https://opencode.ai/zen/go/v1",
-    "doc": "https://opencode.ai/docs/zen",
+    "doc": "https://opencode.ai/docs/go",
     "env": [
       "OPENCODE_API_KEY"
     ],
-    "model_count": 19
+    "model_count": 42
+  },
+  {
+    "id": "openreason",
+    "display_name": "OpenReason",
+    "npm": "@ai-sdk/openai-compatible",
+    "api": "https://api.openreason.app/v1",
+    "doc": "https://openreason.app/docs",
+    "env": [
+      "OPENREASON_API_KEY"
+    ],
+    "model_count": 3
+  },
+  {
+    "id": "opper",
+    "display_name": "Opper",
+    "npm": "@ai-sdk/openai-compatible",
+    "api": "https://api.opper.ai/v3/compat",
+    "doc": "https://opper.ai/models",
+    "env": [
+      "OPPER_API_KEY"
+    ],
+    "model_count": 57
   },
   {
     "id": "orcarouter",
@@ -858,7 +1409,7 @@
     "env": [
       "ORCAROUTER_API_KEY"
     ],
-    "model_count": 81
+    "model_count": 117
   },
   {
     "id": "ovhcloud",
@@ -872,6 +1423,17 @@
     "model_count": 14
   },
   {
+    "id": "pendra",
+    "display_name": "Pendra",
+    "npm": "@ai-sdk/openai-compatible",
+    "api": "https://api.pendra.ai/api/v1",
+    "doc": "https://pendra.ai/docs/integrations/opencode",
+    "env": [
+      "PENDRA_API_KEY"
+    ],
+    "model_count": 6
+  },
+  {
     "id": "perplexity-agent",
     "display_name": "Perplexity Agent",
     "npm": "@ai-sdk/openai",
@@ -880,7 +1442,18 @@
     "env": [
       "PERPLEXITY_API_KEY"
     ],
-    "model_count": 18
+    "model_count": 22
+  },
+  {
+    "id": "pioneer",
+    "display_name": "Pioneer",
+    "npm": "@ai-sdk/openai-compatible",
+    "api": "https://api.pioneer.ai/v1",
+    "doc": "https://agent.pioneer.ai/llms.txt",
+    "env": [
+      "PIONEER_API_KEY"
+    ],
+    "model_count": 114
   },
   {
     "id": "poe",
@@ -902,7 +1475,7 @@
     "env": [
       "POOLSIDE_API_KEY"
     ],
-    "model_count": 2
+    "model_count": 3
   },
   {
     "id": "privatemode-ai",
@@ -914,7 +1487,7 @@
       "PRIVATEMODE_API_KEY",
       "PRIVATEMODE_ENDPOINT"
     ],
-    "model_count": 5
+    "model_count": 11
   },
   {
     "id": "qihang-ai",
@@ -947,7 +1520,7 @@
     "env": [
       "REGOLO_API_KEY"
     ],
-    "model_count": 13
+    "model_count": 18
   },
   {
     "id": "requesty",
@@ -958,18 +1531,29 @@
     "env": [
       "REQUESTY_API_KEY"
     ],
-    "model_count": 38
+    "model_count": 159
   },
   {
     "id": "routing-run",
     "display_name": "routing.run",
     "npm": "@ai-sdk/openai-compatible",
-    "api": "https://ai.routing.sh/v1",
+    "api": "https://api.routing.run/v1",
     "doc": "https://docs.routing.run/api-reference/models",
     "env": [
       "ROUTING_RUN_API_KEY"
     ],
-    "model_count": 26
+    "model_count": 15
+  },
+  {
+    "id": "runinfra",
+    "display_name": "RunInfra",
+    "npm": "@ai-sdk/openai-compatible",
+    "api": "https://api.runinfra.ai/v1",
+    "doc": "https://runinfra.ai/docs",
+    "env": [
+      "RUNINFRA_GATEWAY_KEY"
+    ],
+    "model_count": 7
   },
   {
     "id": "sakana",
@@ -980,7 +1564,7 @@
     "env": [
       "SAKANA_API_KEY"
     ],
-    "model_count": 3
+    "model_count": 4
   },
   {
     "id": "sarvam",
@@ -1002,7 +1586,40 @@
     "env": [
       "SCALEWAY_API_KEY"
     ],
-    "model_count": 17
+    "model_count": 15
+  },
+  {
+    "id": "scnet-token-plan",
+    "display_name": "SCNet Token Plan",
+    "npm": "@ai-sdk/openai-compatible",
+    "api": "https://api.scnet.cn/api/llm/v1",
+    "doc": "https://www.scnet.cn/ac/openapi/doc/2.0/moduleapi/plans/token-plan.html",
+    "env": [
+      "SCNET_API_KEY"
+    ],
+    "model_count": 19
+  },
+  {
+    "id": "scx-ai",
+    "display_name": "SCX.ai",
+    "npm": "@ai-sdk/openai-compatible",
+    "api": "https://api.scx.ai/v1",
+    "doc": "https://platform.scx.ai/docs",
+    "env": [
+      "SCX_API_KEY"
+    ],
+    "model_count": 4
+  },
+  {
+    "id": "sensenova",
+    "display_name": "SenseNova (China)",
+    "npm": "@ai-sdk/openai-compatible",
+    "api": "https://token.sensenova.cn/v1",
+    "doc": "https://platform.sensenova.cn/docs",
+    "env": [
+      "SENSENOVA_API_KEY"
+    ],
+    "model_count": 5
   },
   {
     "id": "siliconflow",
@@ -1013,7 +1630,7 @@
     "env": [
       "SILICONFLOW_API_KEY"
     ],
-    "model_count": 49
+    "model_count": 57
   },
   {
     "id": "siliconflow-cn",
@@ -1024,7 +1641,7 @@
     "env": [
       "SILICONFLOW_CN_API_KEY"
     ],
-    "model_count": 47
+    "model_count": 44
   },
   {
     "id": "snowflake-cortex",
@@ -1036,7 +1653,7 @@
       "SNOWFLAKE_ACCOUNT",
       "SNOWFLAKE_CORTEX_PAT"
     ],
-    "model_count": 18
+    "model_count": 25
   },
   {
     "id": "stackit",
@@ -1051,36 +1668,58 @@
   },
   {
     "id": "stepfun",
-    "display_name": "StepFun",
+    "display_name": "StepFun (China)",
     "npm": "@ai-sdk/openai-compatible",
     "api": "https://api.stepfun.com/v1",
     "doc": "https://platform.stepfun.com/docs/zh/overview/concept",
     "env": [
       "STEPFUN_API_KEY"
     ],
-    "model_count": 5
+    "model_count": 9
   },
   {
     "id": "stepfun-ai",
-    "display_name": "StepFun AI",
+    "display_name": "StepFun (Global)",
     "npm": "@ai-sdk/openai-compatible",
-    "api": "https://api.stepfun.ai/step_plan/v1",
-    "doc": "https://platform.stepfun.ai/docs/en/step-plan/integrations/open-code",
+    "api": "https://api.stepfun.ai/v1",
+    "doc": "https://platform.stepfun.ai/docs/en/overview/concept",
     "env": [
       "STEPFUN_API_KEY"
     ],
-    "model_count": 2
+    "model_count": 9
+  },
+  {
+    "id": "stepfun-ai-step-plan",
+    "display_name": "StepFun Step Plan (Global)",
+    "npm": "@ai-sdk/openai-compatible",
+    "api": "https://api.stepfun.ai/step_plan/v1",
+    "doc": "https://platform.stepfun.ai/docs/en/step-plan/integrations/reasoning-api",
+    "env": [
+      "STEPFUN_API_KEY"
+    ],
+    "model_count": 4
+  },
+  {
+    "id": "stepfun-step-plan",
+    "display_name": "StepFun Step Plan (China)",
+    "npm": "@ai-sdk/openai-compatible",
+    "api": "https://api.stepfun.com/step_plan/v1",
+    "doc": "https://platform.stepfun.com/docs/zh/step-plan/integrations/reasoning-api",
+    "env": [
+      "STEPFUN_API_KEY"
+    ],
+    "model_count": 5
   },
   {
     "id": "subconscious",
     "display_name": "Subconscious",
-    "npm": "@ai-sdk/openai-compatible",
+    "npm": "@ai-sdk/anthropic",
     "api": "https://api.subconscious.dev/v1",
     "doc": "https://docs.subconscious.dev",
     "env": [
       "SUBCONSCIOUS_API_KEY"
     ],
-    "model_count": 1
+    "model_count": 2
   },
   {
     "id": "submodel",
@@ -1102,7 +1741,18 @@
     "env": [
       "SYNTHETIC_API_KEY"
     ],
-    "model_count": 7
+    "model_count": 10
+  },
+  {
+    "id": "tempr",
+    "display_name": "Tempr",
+    "npm": "@ai-sdk/openai-compatible",
+    "api": "https://api.temprhq.io/v1",
+    "doc": "https://temprhq.io/docs/gateway-reference.html",
+    "env": [
+      "TEMPR_API_KEY"
+    ],
+    "model_count": 39
   },
   {
     "id": "tencent-coding-plan",
@@ -1116,6 +1766,17 @@
     "model_count": 8
   },
   {
+    "id": "tencent-token-plan",
+    "display_name": "Tencent Token Plan",
+    "npm": "@ai-sdk/openai-compatible",
+    "api": "https://api.lkeap.cloud.tencent.com/plan/v3",
+    "doc": "https://cloud.tencent.com/document/product/1823/130060",
+    "env": [
+      "TENCENT_TOKEN_PLAN_API_KEY"
+    ],
+    "model_count": 2
+  },
+  {
     "id": "tencent-tokenhub",
     "display_name": "Tencent TokenHub",
     "npm": "@ai-sdk/openai-compatible",
@@ -1124,7 +1785,18 @@
     "env": [
       "TENCENT_TOKENHUB_API_KEY"
     ],
-    "model_count": 1
+    "model_count": 3
+  },
+  {
+    "id": "tensorx",
+    "display_name": "TensorX",
+    "npm": "@ai-sdk/openai-compatible",
+    "api": "https://api.tensorx.ai/v1",
+    "doc": "https://docs.tensorx.ai/",
+    "env": [
+      "TENSORX_API_KEY"
+    ],
+    "model_count": 25
   },
   {
     "id": "the-grid-ai",
@@ -1133,9 +1805,20 @@
     "api": "https://api.thegrid.ai/v1",
     "doc": "https://thegrid.ai/docs",
     "env": [
-      "THEGRIDAI_API_KEY"
+      "THEGRID_API_KEY"
     ],
     "model_count": 9
+  },
+  {
+    "id": "thinkingmachines",
+    "display_name": "Thinking Machines",
+    "npm": "@ai-sdk/anthropic",
+    "api": "https://tinker.thinkingmachines.dev/services/tinker-prod/anthropic/api/v1",
+    "doc": "https://tinker-docs.thinkingmachines.ai/tinker/compatible-apis/anthropic/",
+    "env": [
+      "TINKER_API_KEY"
+    ],
+    "model_count": 2
   },
   {
     "id": "tinfoil",
@@ -1145,6 +1828,39 @@
     "doc": "https://docs.tinfoil.sh",
     "env": [
       "TINFOIL_API_KEY"
+    ],
+    "model_count": 9
+  },
+  {
+    "id": "tokengo",
+    "display_name": "TokenGo",
+    "npm": "@ai-sdk/openai-compatible",
+    "api": "https://api.tokengo.com/v1",
+    "doc": "https://www.tokengo.com/docs",
+    "env": [
+      "TOKENGO_API_KEY"
+    ],
+    "model_count": 13
+  },
+  {
+    "id": "tokenrouter",
+    "display_name": "TokenRouter",
+    "npm": "@ai-sdk/openai-compatible",
+    "api": "https://api.tokenrouter.com/v1",
+    "doc": "https://www.tokenrouter.com/docs/tokenrouter-feature-guide/",
+    "env": [
+      "TOKENROUTER_API_KEY"
+    ],
+    "model_count": 1
+  },
+  {
+    "id": "trustedrouter",
+    "display_name": "TrustedRouter",
+    "npm": "@ai-sdk/openai-compatible",
+    "api": "https://api.trustedrouter.com/v1",
+    "doc": "https://trustedrouter.com/docs",
+    "env": [
+      "TRUSTEDROUTER_API_KEY"
     ],
     "model_count": 7
   },
@@ -1157,7 +1873,7 @@
     "env": [
       "UMANS_AI_API_KEY"
     ],
-    "model_count": 5
+    "model_count": 6
   },
   {
     "id": "umans-ai-coding-plan",
@@ -1168,7 +1884,18 @@
     "env": [
       "UMANS_AI_CODING_PLAN_API_KEY"
     ],
-    "model_count": 6
+    "model_count": 7
+  },
+  {
+    "id": "unorouter",
+    "display_name": "UnoRouter",
+    "npm": "@ai-sdk/openai-compatible",
+    "api": "https://api.unorouter.com/v1",
+    "doc": "https://unorouter.com/models",
+    "env": [
+      "UNOROUTER_API_KEY"
+    ],
+    "model_count": 23
   },
   {
     "id": "upstage",
@@ -1178,6 +1905,28 @@
     "doc": "https://developers.upstage.ai/docs/apis/chat",
     "env": [
       "UPSTAGE_API_KEY"
+    ],
+    "model_count": 4
+  },
+  {
+    "id": "vancine",
+    "display_name": "Vancine",
+    "npm": "@ai-sdk/openai-compatible",
+    "api": "https://vancine.com/v1",
+    "doc": "https://vancine.com/docs",
+    "env": [
+      "VANCINE_API_KEY"
+    ],
+    "model_count": 8
+  },
+  {
+    "id": "vispark",
+    "display_name": "Vispark",
+    "npm": "@ai-sdk/openai-compatible",
+    "api": "https://api.lab.vispark.in/v1",
+    "doc": "https://lab.vispark.in/#vision",
+    "env": [
+      "VISPARK_LAB_API_KEY"
     ],
     "model_count": 3
   },
@@ -1190,7 +1939,29 @@
     "env": [
       "VIVGRID_API_KEY"
     ],
-    "model_count": 13
+    "model_count": 34
+  },
+  {
+    "id": "volcengine",
+    "display_name": "Volcengine Ark",
+    "npm": "@ai-sdk/openai-compatible",
+    "api": "https://ark.cn-beijing.volces.com/api/v3",
+    "doc": "https://www.volcengine.com/docs/82379/1330310",
+    "env": [
+      "ARK_API_KEY"
+    ],
+    "model_count": 16
+  },
+  {
+    "id": "volcengine-coding-plan",
+    "display_name": "Volcengine Ark Coding Plan",
+    "npm": "@ai-sdk/openai-compatible",
+    "api": "https://ark.cn-beijing.volces.com/api/coding/v3",
+    "doc": "https://www.volcengine.com/docs/82379/1928261",
+    "env": [
+      "ARK_CODING_PLAN_API_KEY"
+    ],
+    "model_count": 10
   },
   {
     "id": "vultr",
@@ -1201,7 +1972,7 @@
     "env": [
       "VULTR_API_KEY"
     ],
-    "model_count": 7
+    "model_count": 10
   },
   {
     "id": "wafer.ai",
@@ -1212,18 +1983,29 @@
     "env": [
       "WAFER_API_KEY"
     ],
-    "model_count": 8
+    "model_count": 5
+  },
+  {
+    "id": "wallaby",
+    "display_name": "Wallaby",
+    "npm": "@ai-sdk/openai-compatible",
+    "api": "https://api.wallabytoken.com/v1",
+    "doc": "https://wallabytoken.com/docs",
+    "env": [
+      "WALLABY_API_KEY"
+    ],
+    "model_count": 1
   },
   {
     "id": "wandb",
-    "display_name": "Weights & Biases",
+    "display_name": "CoreWeave",
     "npm": "@ai-sdk/openai-compatible",
     "api": "https://api.inference.wandb.ai/v1",
-    "doc": "https://docs.wandb.ai/guides/integrations/inference/",
+    "doc": "https://docs.wandb.ai/inference",
     "env": [
       "WANDB_API_KEY"
     ],
-    "model_count": 18
+    "model_count": 29
   },
   {
     "id": "xiaomi",
@@ -1234,7 +2016,7 @@
     "env": [
       "XIAOMI_API_KEY"
     ],
-    "model_count": 6
+    "model_count": 9
   },
   {
     "id": "xiaomi-token-plan-ams",
@@ -1245,7 +2027,7 @@
     "env": [
       "XIAOMI_API_KEY"
     ],
-    "model_count": 8
+    "model_count": 9
   },
   {
     "id": "xiaomi-token-plan-cn",
@@ -1256,7 +2038,7 @@
     "env": [
       "XIAOMI_API_KEY"
     ],
-    "model_count": 8
+    "model_count": 9
   },
   {
     "id": "xiaomi-token-plan-sgp",
@@ -1267,7 +2049,7 @@
     "env": [
       "XIAOMI_API_KEY"
     ],
-    "model_count": 8
+    "model_count": 9
   },
   {
     "id": "xpersona",
@@ -1278,7 +2060,7 @@
     "env": [
       "XPERSONA_API_KEY"
     ],
-    "model_count": 2
+    "model_count": 13
   },
   {
     "id": "zai",
@@ -1289,7 +2071,7 @@
     "env": [
       "ZHIPU_API_KEY"
     ],
-    "model_count": 14
+    "model_count": 18
   },
   {
     "id": "zai-coding-plan",
@@ -1300,7 +2082,7 @@
     "env": [
       "ZHIPU_API_KEY"
     ],
-    "model_count": 6
+    "model_count": 7
   },
   {
     "id": "zeldoc",
@@ -1314,6 +2096,17 @@
     "model_count": 1
   },
   {
+    "id": "zenifra",
+    "display_name": "Zenifra",
+    "npm": "@ai-sdk/openai-compatible",
+    "api": "https://ai.zenifra.com/v1",
+    "doc": "https://docs.zenifra.com",
+    "env": [
+      "ZENIFRA_AI_KEY"
+    ],
+    "model_count": 1
+  },
+  {
     "id": "zenmux",
     "display_name": "ZenMux",
     "npm": "@ai-sdk/openai-compatible",
@@ -1322,7 +2115,7 @@
     "env": [
       "ZENMUX_API_KEY"
     ],
-    "model_count": 112
+    "model_count": 129
   },
   {
     "id": "zhipuai",
@@ -1333,7 +2126,7 @@
     "env": [
       "ZHIPU_API_KEY"
     ],
-    "model_count": 13
+    "model_count": 17
   },
   {
     "id": "zhipuai-coding-plan",
@@ -1344,6 +2137,6 @@
     "env": [
       "ZHIPU_API_KEY"
     ],
-    "model_count": 7
+    "model_count": 4
   }
 ]

@@ -328,9 +328,15 @@ mod tests {
         let r = super::super::CanonicalModelRegistry::bundled().unwrap();
 
         // === Direct provider (non-hosting) ===
+        // claude-3.5-sonnet is EOL and dropped from the models.dev catalog (2026 regen) — no longer resolves
         assert_eq!(
             map_to_canonical_model("anthropic", "claude-3-5-sonnet-20241022", r),
-            Some("anthropic/claude-3.5-sonnet".to_string())
+            None
+        );
+        // Claude Opus 5.5 (released 2026-09-22) must resolve to its canonical entry
+        assert_eq!(
+            map_to_canonical_model("anthropic", "claude-opus-5-5", r),
+            Some("anthropic/claude-opus-5.5".to_string())
         );
         assert_eq!(
             map_to_canonical_model("openai", "gpt-4o-latest", r),
@@ -354,21 +360,21 @@ mod tests {
         // === Anthropic Claude - basic ===
         assert_eq!(
             map_to_canonical_model("databricks", "claude-3-5-sonnet", r),
-            Some("anthropic/claude-3.5-sonnet".to_string())
+            None  // claude-3.5-sonnet EOL, dropped from models.dev catalog
         );
         assert_eq!(
             map_to_canonical_model("databricks", "claude-3-5-sonnet-20241022", r),
-            Some("anthropic/claude-3.5-sonnet".to_string())
+            None  // claude-3.5-sonnet EOL, dropped from models.dev catalog
         );
         assert_eq!(
             map_to_canonical_model("databricks", "claude-3-5-sonnet-latest", r),
-            Some("anthropic/claude-3.5-sonnet".to_string())
+            None  // claude-3.5-sonnet EOL, dropped from models.dev catalog
         );
 
         // 4.x: {version}-{model} → {model}-{version}
         assert_eq!(
             map_to_canonical_model("databricks", "claude-4-sonnet", r),
-            Some("anthropic/claude-sonnet-4".to_string())
+            None  // model dropped from models.dev catalog (EOL)
         );
 
         // 4.x with minor version + prefix stripping
@@ -380,15 +386,15 @@ mod tests {
         // === Claude with platform suffixes ===
         assert_eq!(
             map_to_canonical_model("databricks", "claude-4-sonnet-bedrock", r),
-            Some("anthropic/claude-sonnet-4".to_string())
+            None  // model dropped from models.dev catalog (EOL)
         );
         assert_eq!(
             map_to_canonical_model("databricks", "goose-claude-4-sonnet-bedrock", r),
-            Some("anthropic/claude-sonnet-4".to_string())
+            None  // model dropped from models.dev catalog (EOL)
         );
         assert_eq!(
             map_to_canonical_model("bedrock", "claude-3-5-sonnet", r),
-            Some("anthropic/claude-3.5-sonnet".to_string())
+            None  // claude-3.5-sonnet EOL, dropped from models.dev catalog
         );
         assert_eq!(
             map_to_canonical_model("aws_bedrock", "global.anthropic.claude-sonnet-5", r),
@@ -460,11 +466,11 @@ mod tests {
         // === DeepSeek ===
         assert_eq!(
             map_to_canonical_model("databricks", "databricks-deepseek-chat", r),
-            Some("deepseek/deepseek-chat".to_string())
+            None  // model dropped from models.dev catalog (EOL)
         );
         assert_eq!(
             map_to_canonical_model("databricks", "deepseek-reasoner", r),
-            Some("deepseek/deepseek-reasoner".to_string())
+            None  // model dropped from models.dev catalog (EOL)
         );
 
         // === Grok (X.AI) ===
@@ -495,7 +501,7 @@ mod tests {
         // === Provider-prefixed extraction ===
         assert_eq!(
             map_to_canonical_model("databricks", "anthropic-claude-3-5-sonnet", r),
-            Some("anthropic/claude-3.5-sonnet".to_string())
+            None  // claude-3.5-sonnet EOL, dropped from models.dev catalog
         );
         assert_eq!(
             map_to_canonical_model("databricks", "openai-gpt-4o", r),
@@ -511,7 +517,7 @@ mod tests {
         );
         assert_eq!(
             map_to_canonical_model("databricks", "deepseek-deepseek-chat", r),
-            Some("deepseek/deepseek-chat".to_string())
+            None  // model dropped from models.dev catalog (EOL)
         );
         assert_eq!(
             map_to_canonical_model("databricks", "x-ai-grok-4.3", r),
@@ -543,7 +549,7 @@ mod tests {
         );
         assert_eq!(
             map_to_canonical_model("gcp_vertex_ai", "claude-3-5-haiku@20241022", r),
-            Some("google-vertex/claude-3.5-haiku".to_string())
+            None  // model dropped from models.dev catalog (EOL)
         );
         assert_eq!(
             map_to_canonical_model("gcp_vertex_ai", "claude-sonnet-4-5@20250929", r),

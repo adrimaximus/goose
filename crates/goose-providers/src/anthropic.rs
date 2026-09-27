@@ -28,6 +28,8 @@ use rmcp::model::Tool;
 pub const ANTHROPIC_DEFAULT_MODEL: &str = "claude-sonnet-4-5";
 pub const ANTHROPIC_DEFAULT_FAST_MODEL: &str = "claude-haiku-4-5";
 const ANTHROPIC_KNOWN_MODELS: &[&str] = &[
+    // Claude 5.5 models
+    "claude-opus-5-5",
     "claude-opus-4-8",
     "claude-opus-4-7",
     // Claude 4.6 models

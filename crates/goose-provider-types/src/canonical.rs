@@ -110,8 +110,9 @@ mod tests {
 
     #[test]
     fn cloud_provider_retains_cost() {
-        let canonical = maybe_get_canonical_model("anthropic", "claude-3-5-sonnet-20241022")
-            .expect("claude-3.5-sonnet should resolve");
+        // claude-3.5-sonnet is EOL and dropped from the models.dev catalog; use a current model
+        let canonical = maybe_get_canonical_model("anthropic", "claude-sonnet-4-5")
+            .expect("claude-sonnet-4.5 should resolve");
         assert!(canonical.cost.input.is_some());
         assert!(canonical.cost.output.is_some());
     }
