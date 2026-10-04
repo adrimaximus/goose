@@ -177,6 +177,33 @@ pub struct CliSession {
     retry_config: Option<RetryConfig>,
     output_format: String,
     stats: bool,
+    pending_reply: Option<PendingReply>,
+}
+
+/// Quoted-context state for the `/reply` command (WhatsApp-style).
+#[derive(Debug, Clone)]
+struct PendingReply {
+    /// Message index in `self.messages` that was quoted.
+    index: usize,
+    sender: String,
+    excerpt: String,
+}
+
+/// Max excerpt length shown/pinned for replies (chars).
+const REPLY_EXCERPT_LEN: usize = 200;
+/// Max recent messages listed by bare `/reply`.
+const REPLY_WINDOW: usize = 20;
+
+impl CliSession {
+    /// Start index for the `/reply` list window — `None` when empty.
+    fn reply_window(&self) -> Option<usize> {
+        let len = self.messages.len();
+        if len == 0 {
+            None
+        } else {
+            Some(len.saturating_sub(REPLY_WINDOW))
+        }
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -279,6 +306,7 @@ impl CliSession {
             retry_config,
             output_format,
             stats,
+            pending_reply: None,
         }
     }
 
@@ -533,6 +561,9 @@ impl CliSession {
                 .collect();
 
             output::run_status_hook("waiting");
+            if self.pending_reply.is_some() {
+                self.print_pending_reply();
+            }
             let input = input::get_input(&mut editor, Some(&conversation_strings))?;
             if matches!(input, InputResult::Exit) {
                 break;
@@ -675,6 +706,17 @@ impl CliSession {
                 history.save(editor);
                 self.handle_load_skills(&names).await?;
             }
+            InputResult::Reply(args) => match args {
+                None => self.handle_reply_list(),
+                Some(a) if a == "off" => {
+                    if self.pending_reply.take().is_some() {
+                        println!("↩ Reply quote cleared");
+                    } else {
+                        println!("No reply quote was set");
+                    }
+                }
+                Some(a) => self.handle_reply_select(&a, history, editor).await?,
+            },
             InputResult::ListSkills => {
                 history.save(editor);
                 self.handle_list_skills().await?;
@@ -692,7 +734,9 @@ impl CliSession {
         match self.run_mode {
             RunMode::Normal => {
                 history.save(editor);
-                self.push_message(Message::user().with_text(content));
+                let composed = self.compose_reply_message(content);
+                self.pending_reply = None;
+                self.push_message(Message::user().with_text(&composed));
 
                 if let Err(e) = crate::project_tracker::update_project_tracker(
                     Some(content),
@@ -727,6 +771,128 @@ impl CliSession {
             }
         }
         Ok(())
+    }
+
+    /// `/reply` with no args — show recent messages with reply indices.
+    fn handle_reply_list(&self) {
+        let Some(start) = self.reply_window() else {
+            println!("No messages to reply to yet");
+            return;
+        };
+        println!("\n{}", console::style("Recent messages:").bold());
+        for (i, msg) in self.messages.iter().enumerate().skip(start) {
+            let role = match msg.role {
+                rmcp::model::Role::User => "User",
+                rmcp::model::Role::Assistant => "Assistant",
+            };
+            let excerpt =
+                safe_truncate(&msg.as_concat_text().replace('\n', " "), REPLY_EXCERPT_LEN);
+            let empty = if excerpt.is_empty() { " (no text)" } else { "" };
+            println!(
+                "  {} [{}] {}{}",
+                console::style(format!("#{}", i)).cyan(),
+                console::style(role).dim(),
+                excerpt,
+                console::style(empty).dim()
+            );
+        }
+        println!(
+            "\nUse {} to pin a quote, {} to cancel a pinned quote.",
+            console::style("/reply <n>").cyan(),
+            console::style("/reply off").cyan()
+        );
+    }
+
+    /// `/reply <n>` — pin message n as quoted context, or send immediately
+    /// when extra text follows (`/reply <n> message...`).
+    async fn handle_reply_select(
+        &mut self,
+        args: &str,
+        history: &HistoryManager,
+        editor: &mut rustyline::Editor<GooseCompleter, rustyline::history::DefaultHistory>,
+    ) -> Result<()> {
+        let (index_str, message) = match args.split_once(' ') {
+            Some((n, rest)) => (n, Some(rest.trim())),
+            None => (args, None),
+        };
+
+        let index: usize = match index_str.trim().parse() {
+            Ok(i) => i,
+            Err(_) => {
+                output::render_error("Usage: /reply <n> [message] | /reply off");
+                return Ok(());
+            }
+        };
+
+        let Some(msg) = self.messages.iter().nth(index) else {
+            output::render_error(&format!(
+                "No message #{} — run /reply to list valid numbers",
+                index
+            ));
+            return Ok(());
+        };
+
+        let sender = match msg.role {
+            rmcp::model::Role::User => "You".to_string(),
+            rmcp::model::Role::Assistant => "Goose".to_string(),
+        };
+        let excerpt = safe_truncate(&msg.as_concat_text().replace('\n', " "), REPLY_EXCERPT_LEN);
+
+        self.pending_reply = Some(PendingReply {
+            index,
+            sender,
+            excerpt,
+        });
+
+        match message {
+            Some(text) => {
+                self.handle_message_input(text, history, editor).await?;
+            }
+            None => self.print_pending_reply(),
+        }
+        Ok(())
+    }
+
+    /// Show the pinned quote above the prompt (GoClaw-style quote bar).
+    fn print_pending_reply(&self) {
+        if let Some(p) = &self.pending_reply {
+            println!(
+                "  {} {}",
+                console::style("↩ Replying to").cyan(),
+                console::style(&p.sender).dim()
+            );
+            println!(
+                "  {} {}",
+                console::style("│").cyan(),
+                console::style(&p.excerpt).dim().italic()
+            );
+            println!(
+                "  {} {}",
+                console::style("│").cyan(),
+                console::style(format!(
+                    "(send a message, or /reply off to cancel — #{}",
+                    p.index
+                ))
+                .dim()
+            );
+        }
+    }
+
+    /// Wrap user text with the pinned quote so the agent gets explicit context.
+    fn compose_reply_message(&self, text: &str) -> String {
+        match &self.pending_reply {
+            None => text.to_string(),
+            Some(p) => format!(
+                "> [{} said]\n{}\n\n{}",
+                p.sender,
+                p.excerpt
+                    .lines()
+                    .map(|l| format!("> {}", l))
+                    .collect::<Vec<_>>()
+                    .join("\n"),
+                text
+            ),
+        }
     }
 
     fn handle_toggle_theme(&self) {

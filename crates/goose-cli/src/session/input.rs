@@ -30,6 +30,10 @@ pub enum InputResult {
     Edit(Option<String>),
     ListSkills,
     LoadSkills(Vec<String>),
+    /// Reply-with-quote to a previous message.
+    /// - None: bare `/reply` → list recent messages with indices
+    /// - Some(args): `/reply <n> [message]` or `/reply off`
+    Reply(Option<String>),
 }
 
 #[derive(Debug)]
@@ -208,6 +212,8 @@ fn handle_slash_command(input: &str) -> Option<InputResult> {
     const CMD_EDIT: &str = "/edit";
     const CMD_EDIT_WITH_SPACE: &str = "/edit ";
     const CMD_SKILLS: &str = "/skills";
+    const CMD_REPLY: &str = "/reply";
+    const CMD_REPLY_WITH_SPACE: &str = "/reply ";
 
     match input {
         "/exit" | "/quit" => Some(InputResult::Exit),
@@ -299,6 +305,13 @@ fn handle_slash_command(input: &str) -> Option<InputResult> {
             Some(InputResult::Compact)
         }
         "/r" => Some(InputResult::ToggleFullToolOutput),
+        s if s == CMD_REPLY => Some(InputResult::Reply(None)),
+        s if s.starts_with(CMD_REPLY_WITH_SPACE) => Some(InputResult::Reply(Some(
+            s.strip_prefix(CMD_REPLY_WITH_SPACE)
+                .unwrap_or_default()
+                .trim()
+                .to_string(),
+        ))),
         s if s == CMD_EDIT => Some(InputResult::Edit(None)),
         s if s.starts_with(CMD_EDIT_WITH_SPACE) => {
             let prefill = s
@@ -428,6 +441,9 @@ fn print_help() {
 /status - Show session status: model, provider, mode, and token usage.
 /edit [text] - Open your prompt editor to compose a message. Optionally pre-fill with text.
                Uses $GOOSE_PROMPT_EDITOR, $VISUAL, or $EDITOR (in that order).
+/reply [n] [message] - Reply with quoted context. Bare /reply lists recent messages
+               with numbers; /reply <n> pins message n as the quoted context;
+               /reply <n> <message> sends it immediately; /reply off cancels.
 /skills - List available skills or enable skills by name (usage: /skills [<name>...])
 /? or /help - Display this help message
 /clear - Clears the current chat history
@@ -478,6 +494,24 @@ mod tests {
         assert!(matches!(
             handle_slash_command("/quit"),
             Some(InputResult::Exit)
+        ));
+
+        // Test reply command parsing
+        assert!(matches!(
+            handle_slash_command("/reply"),
+            Some(InputResult::Reply(None))
+        ));
+        assert!(matches!(
+            handle_slash_command("/reply 3"),
+            Some(InputResult::Reply(Some(ref s))) if s == "3"
+        ));
+        assert!(matches!(
+            handle_slash_command("/reply 3 why this error?"),
+            Some(InputResult::Reply(Some(ref s))) if s == "3 why this error?"
+        ));
+        assert!(matches!(
+            handle_slash_command("/reply off"),
+            Some(InputResult::Reply(Some(ref s))) if s == "off"
         ));
 
         // Test help commands
